@@ -1,221 +1,221 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const Icons = {
-  Back: () => (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-      <path d="M19 12H5M12 19l-7-7 7-7"/>
-    </svg>
-  ),
-};
+import { Plus, Menu, ChevronDown, ChevronLeft, ChevronRight, Check, X, Sparkles, Calendar as CalendarIcon } from 'lucide-react';
 
 export default function Calendar() {
   const navigate = useNavigate();
-  const scrollRef = useRef(null);
-  const MAIN_COLOR = '#3f4d8e';
+  const MAIN_COLOR = '#3f4d8e'; 
 
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
-  const [selectedDate, setSelectedDate] = useState(null);
-  
-  // 1. AI 자동 분석 일정 포함 상태
-  // 시연을 위해 2026년 3월(month: 2)에 AI가 찾은 일정을 미리 넣어두었습니다.
-  const [events, setEvents] = useState([
-    { 
-      id: 'ai-1', 
-      year: 2026, 
-      month: 2, 
-      day: 20, 
-      title: '[AI분석] 잔금 납부 및 입주 예정', 
-      color: '#EF4444', // AI 분석 일정은 빨간색으로 강조
-      isAI: true 
-    },
-    { 
-      id: 'ai-2', 
-      year: 2026, 
-      month: 2, 
-      day: 21, 
-      title: '[AI분석] 전입신고 및 확정일자 권장', 
-      color: '#3B82F6',
-      isAI: true 
-    }
-  ]);
-  
-  const [newTripTitle, setNewTripTitle] = useState('');
+  const [selectedDate, setSelectedDate] = useState(today.getDate());
+
+  const [aiSuggestion, setAiSuggestion] = useState({
+    title: '잔금 납부 및 입주',
+    date: 20, 
+    month: 2, 
+    year: 2026,
+    show: true
+  });
+
+  const [events, setEvents] = useState([]);
+  const [isInputOpen, setIsInputOpen] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
 
   const years = [];
   for (let y = 2024; y <= 2040; y++) { years.push(y); }
-  const months = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+  const months = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
 
   const firstDayIndex = new Date(viewYear, viewMonth, 1).getDay();
-  const startDay = firstDayIndex === 0 ? 6 : firstDayIndex - 1; 
   const lastDate = new Date(viewYear, viewMonth + 1, 0).getDate();
-
+  
   const calendarDays = [];
-  for (let i = 0; i < startDay; i++) calendarDays.push(null);
+  for (let i = 0; i < firstDayIndex; i++) calendarDays.push(null);
   for (let i = 1; i <= lastDate; i++) calendarDays.push(i);
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      const activeItem = scrollRef.current.children[viewMonth];
-      if (activeItem) {
-        scrollRef.current.scrollTo({
-          left: activeItem.offsetLeft - scrollRef.current.offsetWidth / 2 + activeItem.offsetWidth / 2,
-          behavior: 'smooth'
-        });
-      }
-    }
-  }, [viewMonth]);
+  const acceptAiSuggestion = () => {
+    const newEvent = {
+      id: 'ai-extract',
+      year: aiSuggestion.year,
+      month: aiSuggestion.month,
+      day: aiSuggestion.date,
+      title: `[AI] ${aiSuggestion.title}`,
+      time: 'AI Extraction',
+      color: '#EF4444'
+    };
+    setEvents([newEvent, ...events]);
+    setAiSuggestion({ ...aiSuggestion, show: false });
+  };
 
-  const handleAddEvent = () => {
-    if (!selectedDate) return alert('날짜를 먼저 선택해주세요!');
-    if (!newTripTitle.trim()) return alert('일정 내용을 입력해주세요!');
-
-    const newEntry = {
+  const handleDirectAdd = () => {
+    if (!newTitle.trim()) return;
+    const dayNamesEn = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
+    const dayName = dayNamesEn[new Date(viewYear, viewMonth, selectedDate).getDay()];
+    
+    const newEvent = {
       id: Date.now(),
       year: viewYear,
       month: viewMonth,
       day: selectedDate,
-      title: newTripTitle,
-      color: MAIN_COLOR,
-      isAI: false
+      title: newTitle,
+      time: `${selectedDate} ${dayName}`,
+      color: 'white' 
     };
-
-    setEvents([...events, newEntry]);
-    setNewTripTitle(''); 
-    alert(`${selectedDate}일 일정이 등록되었습니다.`);
+    setEvents([newEvent, ...events]);
+    setNewTitle('');
+    setIsInputOpen(false);
   };
 
-  const currentMonthEvents = events.filter(e => e.year === viewYear && e.month === viewMonth);
-  const filteredEvents = selectedDate 
-    ? currentMonthEvents.filter(e => e.day === selectedDate)
-    : currentMonthEvents;
-
   return (
-    <div className="content-wrapper" style={{ backgroundColor: '#F8FAFC', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
-      
-      <div style={{ background: MAIN_COLOR, padding: '40px 20px 60px 20px', color: 'white', textAlign: 'center' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-          <div onClick={() => navigate('/')} style={{ width: '50px', height: '50px', borderRadius: '15px', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-            <Icons.Back />
-          </div>
-          <h2 style={{ fontSize: '22px', margin: 0, fontWeight: 'bold' }}>일정 관리</h2>
-          <div style={{ width: '50px' }} />
-        </div>
+    <div style={{ backgroundColor: MAIN_COLOR, minHeight: '100vh', padding: '20px', color: 'white', boxSizing: 'border-box' }}>
+      <style>{`
+        .calendar-card {
+          background: rgba(255, 255, 255, 0.1); 
+          border-radius: 28px; padding: 35px 20px; color: white;
+          box-shadow: 0 20px 50px rgba(11, 9, 9, 0.15); margin-top: 20px;
+          backdrop-filter: blur(25px); 
+          border: 1px solid rgba(255,255,255,0.08);
+          width: 100%; box-sizing: border-box;
+        }
+        .date-grid { display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; margin-top: 25px; }
+        .day-header { font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.4); margin-bottom: 15px; }
+        .date-cell { height: 48px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 600; cursor: pointer; position: relative; }
+        .selected-date { background: white; color: ${MAIN_COLOR}; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(255, 255, 255, 0.3); }
+        .event-dot { position: absolute; bottom: 6px; width: 4px; height: 4px; background: #f87171; border-radius: 50%; }
         
-        <select 
-          value={viewYear} 
-          onChange={(e) => { setViewYear(Number(e.target.value)); setSelectedDate(null); }}
-          style={{ 
-            appearance: 'none', background: 'rgba(255,255,255,0.2)', border: '1.5px solid rgba(255,255,255,0.4)',
-            color: 'white', padding: '10px 20px', borderRadius: '15px', fontSize: '20px', fontWeight: 'bold', outline: 'none'
-          }}
-        >
-          {years.map(y => <option key={y} value={y} style={{color: 'black'}}>{y}년</option>)}
-        </select>
+        /* ✅ 버튼과 카드의 가로 길이를 100%로 통일 ㅋ */
+        .full-width-box { width: 100%; box-sizing: border-box; margin-bottom: 12px; }
+        
+        .event-card-wide { 
+          background: rgba(255, 255, 255, 0.08); 
+          padding: 20px; border-radius: 22px; 
+          color: white; backdrop-filter: blur(10px);
+          border: 1px solid rgba(255,255,255,0.05);
+          display: flex; align-items: center; justify-content: space-between;
+        }
+
+        .ai-suggestion-box {
+          background: rgba(255, 255, 255, 0.12); padding: 18px; border-radius: 22px; margin-top: 25px;
+          border: 1px dashed rgba(255,255,255,0.3); backdrop-filter: blur(10px); width: 100%; box-sizing: border-box;
+        }
+        .input-box { background: white; padding: 15px; border-radius: 20px; margin: 20px 0; display: flex; gap: 10px; width: 100%; box-sizing: border-box; }
+      `}</style>
+
+      {/* 상단 바 */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Menu size={24} onClick={() => navigate(-1)} style={{ cursor: 'pointer' }} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}>
+          <span style={{ fontWeight: '800' }}>{viewYear}</span>
+          <ChevronDown size={16} />
+        </div>
       </div>
 
-      <div style={{ background: 'white', marginTop: '-30px', borderRadius: '35px 35px 0 0', padding: '25px', flex: 1 }}>
+      {/* ✅ 'Calendar' 글자 하얗게 설정 ㅋ */}
+      <h1 style={{ fontSize: '32px', fontWeight: '900', margin: '25px 0 10px', color: 'white' }}>Calendar</h1>
+
+      {/* 📅 달력 카드 */}
+      <div className="calendar-card">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+          <ChevronLeft size={22} onClick={() => setViewMonth(prev => (prev === 0 ? 11 : prev - 1))} style={{ cursor: 'pointer', opacity: 0.7 }} />
+          <h2 style={{ fontSize: '20px', fontWeight: '900', letterSpacing: '5px', color: 'white', margin: 0 }}>{months[viewMonth]}</h2>
+          <ChevronRight size={22} onClick={() => setViewMonth(prev => (prev === 11 ? 0 : prev + 1))} style={{ cursor: 'pointer', opacity: 0.7 }} />
+        </div>
         
-        <div ref={scrollRef} style={{ display: 'flex', gap: '30px', overflowX: 'auto', paddingBottom: '25px', scrollbarWidth: 'none' }}>
-          {months.map((m, idx) => (
-            <div key={m} onClick={() => { setViewMonth(idx); setSelectedDate(null); }} style={{ flexShrink: 0, cursor: 'pointer', color: viewMonth === idx ? MAIN_COLOR : '#94A3B8', fontWeight: viewMonth === idx ? '900' : 'bold', fontSize: '19px', position: 'relative' }}>
-              {m}월
-              {viewMonth === idx && <div style={{ position: 'absolute', bottom: '-10px', left: '0', width: '100%', height: '4px', background: MAIN_COLOR, borderRadius: '10px' }} />}
-            </div>
+        <div className="date-grid">
+          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+            <div key={i} className="day-header">{d}</div>
           ))}
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', fontSize: '15px', marginBottom: '20px', color: '#64748b', fontWeight: 'bold' }}>
-          {['월', '화', '수', '목', '금', '토', '일'].map((day, i) => <div key={day} style={{ color: i >= 5 ? '#EF4444' : '#64748b' }}>{day}</div>)}
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', textAlign: 'center', rowGap: '8px' }}>
           {calendarDays.map((date, i) => {
-            const isToday = today.getDate() === date && today.getMonth() === viewMonth && today.getFullYear() === viewYear;
             const isSelected = selectedDate === date;
-            const dayEvents = currentMonthEvents.filter(e => e.day === date);
-            const hasEvent = dayEvents.length > 0;
-            const hasAIEvent = dayEvents.some(e => e.isAI);
+            const hasEvent = events.some(e => e.year === viewYear && e.month === viewMonth && e.day === date);
             
             return (
-              <div key={i} style={{ height: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+              <div key={i} className="date-cell" onClick={() => date && setSelectedDate(date)}>
                 {date && (
-                  <div 
-                    onClick={() => setSelectedDate(date)} 
-                    style={{
-                      width: '42px', height: '42px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: isSelected ? MAIN_COLOR : (isToday ? '#EEF2FF' : 'transparent'),
-                      color: isSelected ? 'white' : (i % 7 >= 5 ? '#EF4444' : '#1E293B'),
-                      fontWeight: '700', fontSize: '17px', cursor: 'pointer', border: isToday ? `1px solid ${MAIN_COLOR}` : 'none'
-                    }}
-                  >
-                    {date}
-                  </div>
-                )}
-                {/* AI 일정이 있으면 반짝이는 파란 점, 일반 일정이면 회색 점 */}
-                {date && hasEvent && (
-                  <div style={{ 
-                    position: 'absolute', bottom: '2px', width: '6px', height: '6px', borderRadius: '50%', 
-                    background: isSelected ? 'white' : (hasAIEvent ? '#3B82F6' : '#94A3B8'),
-                    boxShadow: hasAIEvent ? '0 0 8px #3B82F6' : 'none'
-                  }} />
+                  <>
+                    <div className={isSelected ? "selected-date" : ""}>
+                      {date}
+                    </div>
+                    {hasEvent && !isSelected && <div className="event-dot" />}
+                  </>
                 )}
               </div>
             );
           })}
         </div>
+      </div>
 
-        {selectedDate && (
-          <div style={{ marginTop: '30px', padding: '20px', background: '#F8FAFC', borderRadius: '25px', border: `1.5px solid ${MAIN_COLOR}33` }}>
-            <p style={{ margin: '0 0 10px 0', fontSize: '16px', fontWeight: 'bold', color: MAIN_COLOR }}>{selectedDate}일 일정 등록</p>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <input 
-                type="text" 
-                value={newTripTitle}
-                onChange={(e) => setNewTripTitle(e.target.value)}
-                placeholder="내용을 입력하세요"
-                style={{ flex: 1, padding: '12px 15px', borderRadius: '12px', border: '1px solid #CBD5E1', fontSize: '17px', outline: 'none' }}
-              />
-              <button 
-                onClick={handleAddEvent}
-                style={{ padding: '0 20px', borderRadius: '12px', background: MAIN_COLOR, color: 'white', border: 'none', fontWeight: 'bold', cursor: 'pointer' }}
-              >
-                추가
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div style={{ marginTop: '40px' }}>
-          <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#1E293B', marginBottom: '15px' }}>
-            {selectedDate ? `${selectedDate}일 상세 일정` : `${viewMonth + 1}월 전체 일정`}
-          </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', paddingBottom: '40px' }}>
-            {filteredEvents.length > 0 ? (
-              filteredEvents.map((item) => (
-                <div key={item.id} style={{ 
-                  display: 'flex', alignItems: 'center', padding: '18px', borderRadius: '20px', 
-                  background: item.isAI ? '#F0F7FF' : '#F8FAFC', 
-                  border: item.isAI ? '1.2px solid #3B82F6' : '1.2px solid #F1F5F9' 
-                }}>
-                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: item.color, marginRight: '15px' }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '17px', fontWeight: '600', color: '#334155' }}>
-                      {item.title}
-                      {item.isAI && <span style={{ marginLeft: '8px', fontSize: '10px', color: '#3B82F6', background: '#E0EFFF', padding: '2px 6px', borderRadius: '4px' }}>AI추천</span>}
+      {/* 📋 Upcoming Events (가로 길이 통일 ㅋ) */}
+      <div style={{ marginTop: '40px' }}>
+        <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '15px', letterSpacing: '0.5px' }}>Upcoming Events</h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {events.length > 0 ? (
+            events.map(event => (
+              <div key={event.id} className="full-width-box">
+                <div className="event-card-wide">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                    <div style={{ width: '4px', height: '30px', background: event.id === 'ai-extract' ? '#f87171' : 'white', borderRadius: '2px' }} />
+                    <div>
+                      <p style={{ fontSize: '15px', fontWeight: '800', margin: 0 }}>{event.title}</p>
+                      <p style={{ fontSize: '11px', opacity: 0.6, marginTop: '2px' }}>{event.time} • {event.year}.{event.month + 1}.{event.day}</p>
                     </div>
                   </div>
-                  <div style={{ fontSize: '14px', color: '#94A3B8' }}>{item.day}일</div>
+                  <ChevronRight size={18} style={{ opacity: 0.3 }} />
                 </div>
-              ))
-            ) : (
-              <p style={{ textAlign: 'center', color: '#94A3B8', marginTop: '20px', fontSize: '16px' }}>등록된 일정이 없습니다.</p>
-            )}
-          </div>
+              </div>
+            ))
+          ) : (
+            <div style={{ textAlign: 'center', padding: '30px', opacity: 0.4 }}>
+              <CalendarIcon size={28} style={{ marginBottom: '8px' }} />
+              <p style={{ fontSize: '13px' }}>No events added yet.</p>
+            </div>
+          )}
         </div>
       </div>
+
+      {isInputOpen && (
+        <div className="input-box">
+          <input 
+            type="text" 
+            placeholder={`Add event for ${selectedDate} ${months[viewMonth].toLowerCase()}...`}
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            style={{ flex: 1, border: 'none', outline: 'none', color: '#102543', fontSize: '14px' }}
+          />
+          <button onClick={handleDirectAdd} style={{ background: MAIN_COLOR, color: 'white', border: 'none', padding: '8px 18px', borderRadius: '12px', fontWeight: 'bold' }}>Add</button>
+        </div>
+      )}
+
+      {/* 🤖 AI 제안 섹션 */}
+      {aiSuggestion.show && (
+        <div className="ai-suggestion-box">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
+            <Sparkles size={16} color="#FFD700" />
+            <span style={{ fontSize: '12px', fontWeight: '700', opacity: 0.9 }}>AI Smart Extraction</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <p style={{ fontSize: '15px', fontWeight: '800', margin: 0 }}>{aiSuggestion.title}</p>
+              <p style={{ fontSize: '11px', opacity: 0.7 }}>Found in your documents</p>
+            </div>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => setAiSuggestion({...aiSuggestion, show: false})} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '10px', color: 'white', padding: '8px' }}><X size={18}/></button>
+              <button onClick={acceptAiSuggestion} style={{ background: 'white', border: 'none', borderRadius: '10px', color: MAIN_COLOR, padding: '8px' }}><Check size={18}/></button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ➕ 추가 버튼 (가로 길이 카드와 동일 ㅋ) */}
+      {!isInputOpen && (
+        <button 
+          onClick={() => setIsInputOpen(true)}
+          style={{ width: '100%', background: 'white', color: MAIN_COLOR, border: 'none', padding: '18px', borderRadius: '18px', fontWeight: '800', marginTop: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
+        >
+          <Plus size={20} strokeWidth={3} /> Create Events
+        </button>
+      )}
     </div>
   );
 }
