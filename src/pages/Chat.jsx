@@ -9,7 +9,7 @@ function Chat() {
     { type: "ai", text: "안녕하세요! 분석 결과를 바탕으로 궁금한 점을 질문해주세요. 근저당, 용도, 특약 등 뭐든 물어보세요.", time: "오후 2:34" },
   ]);
 
-  // ✅ 시연을 위해 처음에는 빈 배열로 시작 (사용자가 누른 것만 상태에 담김)
+
   const [bookmarkedTexts, setBookmarkedTexts] = useState([]);
   const scrollRef = useRef(null);
 
@@ -19,7 +19,7 @@ function Chat() {
     }
   }, [messages]);
 
-  // ✅ 채팅 답변 북마크 토글 함수 (실시간 UI 반영 로직 포함)
+  // 채팅 답변 ++ 북마크
   const toggleBookmark = (text) => {
     const currentList = JSON.parse(localStorage.getItem('bookmarked_terms') || '[]');
     let newList;
