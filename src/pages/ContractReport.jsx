@@ -1,35 +1,77 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+// 제미나이 초기 세팅
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" });
 
 function ContractReport() {
   const navigate = useNavigate();
-  
-  // ✅ 1. 시연을 위해 상태를 무조건 빈 객체({})로 시작합니다.
   const [bookmarkedIds, setBookmarkedIds] = useState({});
+  const [clauses, setClauses] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // ✅ 2. 기존 데이터를 불러오는 로직을 시연용으로 비워두었습니다.
-  // 이 페이지를 열 때는 항상 '북마크 안 된 상태'로 보이게 됩니다.
   useEffect(() => {
-    // 시연 중 새로고침해도 깨끗한 상태를 유지하고 싶다면 이 안을 비워두면 됩니다.
-    setBookmarkedIds({}); 
+    setBookmarkedIds({});
+    generateClauses();
   }, []);
+
+  const generateClauses = async () => {
+    try {
+      // 1. 저장된 부동산 분석 결과 불러오기
+      const savedData = localStorage.getItem('ai_analysis_result');
+      const analysisContext = savedData ? savedData : "특이사항 없음";
+
+      // 2. 제미나이에게 특약 생성 요청 프롬프트 (JSON 강제)
+      const prompt = `
+        너는 전세 사기를 예방하는 전문 변호사야. 
+        다음 부동산 분석 결과를 바탕으로, 세입자를 완벽하게 보호할 수 있는 '안심 특약' 3가지를 작성해줘.
+        
+        [부동산 분석 결과]
+        ${analysisContext}
+
+        [출력 규칙]
+        반드시 아래 JSON 배열 형식으로만 대답해. 마크다운 기호 없이 순수 JSON만 출력해.
+        [
+          { 
+            "id": 1, 
+            "title": "특약 제목 (예: 근저당 말소 조건부 특약)", 
+            "badge": "주의 대응" 또는 "기본 권장", 
+            "type": "purple" (주의) 또는 "green" (안전/기본), 
+            "law": "관련 법률 (예: 주택임대차보호법)", 
+            "desc": "실제 계약서에 들어갈 구체적이고 법적인 특약 문구" 
+          },
+          ... 2, 3번 항목
+        ]
+      `;
+
+      const result = await model.generateContent(prompt);
+      const responseText = result.response.text();
+      const cleanJson = responseText.replace(/```json|```/g, "").trim();
+      const aiGeneratedClauses = JSON.parse(cleanJson);
+
+      setClauses(aiGeneratedClauses);
+    } catch (error) {
+      console.error("특약 생성 오류:", error);
+      // 에러 시 보여줄 기본 데이터(Fallback)
+      setClauses([
+        { id: 1, title: "기본 안전 특약", badge: "기본 권장", type: "green", law: "주택임대차보호법", desc: "임대인은 잔금일 익일까지 현재의 권리관계를 유지한다." }
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const toggleBookmark = (title, desc) => {
     const currentList = JSON.parse(localStorage.getItem('bookmarked_terms') || '[]');
     let newList;
 
     if (bookmarkedIds[title]) {
-      // 해제 로직
       newList = currentList.filter(item => item.title !== title);
       alert('특약 북마크가 해제되었습니다.');
     } else {
-      // 저장 로직
-      const newTerm = {
-        id: Date.now(),
-        title: title,
-        desc: desc
-      };
-      newList = [...currentList, newTerm];
+      newList = [...currentList, { id: Date.now(), title: title, desc: desc }];
       alert('나의 특약에 저장되었습니다! 북마크 페이지에서 확인하세요.');
     }
 
@@ -53,7 +95,7 @@ function ContractReport() {
         .warnRow{ display:flex; align-items:center; gap:8px; }
         .warnDot{ width:6px; height:6px; border-radius:50%; background:#ffbf1a; }
         .warnText{ margin:0; color:#ffd35e; font-size:12px; font-weight:600; }
-        .section{ background:white; padding:24px 20px; border-radius:30px; margin: -15px 10px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
+        .section{ background:white; padding:24px 20px; border-radius:30px; margin: -15px 10px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.05); min-height: 400px; }
         .sectionHeader{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; }
         .sectionHeader h3{ margin:0; font-size:16px; color:#24244d; font-weight:800; }
         .pdfBtn{ border:none; background:transparent; color:#7167ff; font-size:12px; font-weight:700; cursor:pointer; }
@@ -71,13 +113,11 @@ function ContractReport() {
         .quoteBox p{ margin:0; font-size:13px; line-height:1.6; color:#475569; font-weight:500; }
         .lawText{ margin:0; font-size:11px; color:#3f4d8e; text-decoration:underline; }
         .saveBtn{ width:calc(100% - 40px); margin:20px auto; display:block; border:none; border-radius:18px; background:#3f4d8e; color:white; font-size:16px; font-weight:800; padding:18px; cursor:pointer; box-shadow: 0 4px 15px rgba(81, 70, 239, 0.3); }
-
-        .bookmarkBtn {
-          position: absolute; right: 15px; top: 18px;
-          background: none; border: none; cursor: pointer;
-          padding: 5px; transition: transform 0.2s;
-        }
+        .bookmarkBtn { position: absolute; right: 15px; top: 18px; background: none; border: none; cursor: pointer; padding: 5px; transition: transform 0.2s; }
         .bookmarkBtn:active { transform: scale(1.2); }
+        
+        .loading-text { text-align: center; color: #3f4d8e; font-weight: bold; margin-top: 50px; animation: blink 1.5s infinite; }
+        @keyframes blink { 0% { opacity: 0.4; } 50% { opacity: 1; } 100% { opacity: 0.4; } }
       `}</style>
 
       <div className="container">
@@ -87,11 +127,11 @@ function ContractReport() {
             <h2>AI 특약 자동 생성</h2>
           </div>
           <div className="addressCard">
-            <p className="addrTag">분석된 주소지 정보</p>
-            <h3>서울시 마포구 합정동 123-4</h3>
+            <p className="addrTag">AI 맞춤형 특약 리포트</p>
+            <h3>위험 요소 방어 특약</h3>
             <div className="warnRow">
               <span className="warnDot"></span>
-              <p className="warnText">주의 항목 2개 발견 — 맞춤 특약 생성</p>
+              <p className="warnText">AI가 분석한 결과를 바탕으로 생성되었습니다.</p>
             </div>
           </div>
         </div>
@@ -102,34 +142,35 @@ function ContractReport() {
             <button className="pdfBtn">PDF 전체 저장</button>
           </div>
 
-          {/* 특약 리스트 아이템들 */}
-          {[
-            { id: 1, title: "근저당 말소 조건부 특약", badge: "주의 대응", type: "purple", law: "민법 제357조", desc: "임대인은 잔금 지급일 이전까지 이 건물에 설정된 근저당권 전액을 말소하여야 하며..." },
-            { id: 2, title: "용도 변경 확인 특약", badge: "주의 대응", type: "purple", law: "건축법 시행령", desc: "임대인은 본 임대차 목적물이 주거 목적으로 사용함에 있어 법적 하자가 없음을 보증하며..." },
-            { id: 3, title: "확정일자 취득 협조 특약", badge: "기본 권장", type: "green", law: "주택임대차보호법 제3조의2", desc: "임차인은 입주일 당일 확정일자를 취득하며, 임대인은 이에 필요한 정보 제공에 적극 협조한다." }
-          ].map((item) => (
-            <div className="specialCard" key={item.id}>
-              <button className="bookmarkBtn" onClick={() => toggleBookmark(item.title, item.desc)}>
-                <svg width="22" height="22" viewBox="0 0 24 24" 
-                     fill={bookmarkedIds[item.title] ? "#3f4d8e" : "none"} 
-                     stroke={bookmarkedIds[item.title] ? "#3f4d8e" : "#cbd5e1"} 
-                     strokeWidth="2.5">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                </svg>
-              </button>
-              <div className="cardTop">
-                <div className="cardTitleWrap">
-                  <div className="smallNumber">{item.id}</div>
-                  <h4>{item.title}</h4>
+          {/* AI 로딩 중일 때 */}
+          {loading ? (
+            <div className="loading-text">AI가 맞춤형 특약을 작성하고 있습니다... ✍️</div>
+          ) : (
+            /* AI가 생성한 특약 리스트 렌더링 */
+            clauses.map((item) => (
+              <div className="specialCard" key={item.id}>
+                <button className="bookmarkBtn" onClick={() => toggleBookmark(item.title, item.desc)}>
+                  <svg width="22" height="22" viewBox="0 0 24 24" 
+                       fill={bookmarkedIds[item.title] ? "#3f4d8e" : "none"} 
+                       stroke={bookmarkedIds[item.title] ? "#3f4d8e" : "#cbd5e1"} 
+                       strokeWidth="2.5">
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                  </svg>
+                </button>
+                <div className="cardTop">
+                  <div className="cardTitleWrap">
+                    <div className="smallNumber">{item.id}</div>
+                    <h4>{item.title}</h4>
+                  </div>
+                  <div className={`badge ${item.type === 'purple' ? 'warning' : 'success'}`}>{item.badge}</div>
                 </div>
-                <div className={`badge ${item.type === 'purple' ? 'warning' : 'success'}`}>{item.badge}</div>
+                <div className={`quoteBox ${item.type}`}>
+                  <p>"{item.desc}"</p>
+                </div>
+                <p className="lawText">📜 {item.law} 관련</p>
               </div>
-              <div className={`quoteBox ${item.type}`}>
-                <p>"{item.desc}"</p>
-              </div>
-              <p className="lawText">📜 {item.law} 관련</p>
-            </div>
-          ))}
+            ))
+          )}
         </div>
 
         <button className="saveBtn" onClick={() => alert('PDF 저장 기능 준비 중입니다.')}>

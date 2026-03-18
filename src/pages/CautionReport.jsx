@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  AlertTriangle, 
-  MessageCircle, 
-  Calendar, 
-  BookOpen, 
-  Search, 
-  Wrench
+import {
+  AlertTriangle,
+  MessageCircle,
+  Calendar,
+  BookOpen,
+  Search,
+  Wrench,
+  CheckCircle,
+  XOctagon
 } from 'lucide-react';
 
 const CautionReport = () => {
@@ -15,14 +17,35 @@ const CautionReport = () => {
   const carouselRef = useRef(null);
 
   const [isBookmarked, setIsBookmarked] = useState(false);
-  const [bookmarkedItems, setBookmarkedItems] = useState({}); // 개별 카드 북마크 상태
+  const [bookmarkedItems, setBookmarkedItems] = useState({});
 
-  const MAIN_COLOR = '#3f4d8e';
+  // 1. LocalStorage에서 AI 분석 결과 불러오기
+  const [reportData, setReportData] = useState({
+    status: "Green", score: 100, summary: "데이터를 불러오는 중입니다...", details: [], advice: ""
+  });
 
-  // ✅ 로드 시 로컬스토리지와 상태 동기화
+  useEffect(() => {
+    const savedData = localStorage.getItem('ai_analysis_result');
+    if (savedData) {
+      setReportData(JSON.parse(savedData));
+    }
+  }, []);
+
+  // 2. 신호등 상태에 따른 테마 설정 (색상, 텍스트, 아이콘)
+  const themeConfig = {
+    Green: { color: '#10b981', text: '안전해요', icon: <CheckCircle size={24} />, bgBorder: '#d1fae5' },
+    Yellow: { color: '#f59e0b', text: '주의가 필요해요', icon: <AlertTriangle size={24} />, bgBorder: '#fef3c7' },
+    Red: { color: '#ef4444', text: '위험해요!', icon: <XOctagon size={24} />, bgBorder: '#fee2e2' },
+    Error: { color: '#3f4d8e', text: '분석 오류', icon: <AlertTriangle size={24} />, bgBorder: '#e0e7ff' }
+  };
+
+  const currentTheme = themeConfig[reportData.status] || themeConfig.Green;
+  const MAIN_COLOR = currentTheme.color;
+
+  // 북마크 로직 (기존과 동일)
   useEffect(() => {
     const savedReports = JSON.parse(localStorage.getItem('bookmarked_reports') || '[]');
-    setIsBookmarked(savedReports.some(item => item.title === '마포구 합정동 123-4 / 302호'));
+    setIsBookmarked(savedReports.some(item => item.title === 'AI 분석 리포트'));
 
     const savedTerms = JSON.parse(localStorage.getItem('bookmarked_terms') || '[]');
     const termMap = {};
@@ -30,105 +53,109 @@ const CautionReport = () => {
     setBookmarkedItems(termMap);
   }, []);
 
-  // ✅ 전체 리포트 북마크 토글
   const toggleMainBookmark = () => {
     const currentList = JSON.parse(localStorage.getItem('bookmarked_reports') || '[]');
     let newList;
     if (isBookmarked) {
-      newList = currentList.filter(item => item.title !== '마포구 합정동 123-4 / 302호');
+      newList = currentList.filter(item => item.title !== 'AI 분석 리포트');
       alert('리포트 북마크가 해제되었습니다.');
     } else {
-      newList = [...currentList, { id: Date.now(), title: '마포구 합정동 123-4 / 302호', date: new Date().toLocaleDateString(), status: '주의' }];
+      newList = [...currentList, { id: Date.now(), title: 'AI 분석 리포트', date: new Date().toLocaleDateString(), status: reportData.status }];
       alert('리포트가 북마크에 저장되었습니다!');
     }
     localStorage.setItem('bookmarked_reports', JSON.stringify(newList));
     setIsBookmarked(!isBookmarked);
   };
 
-  // ✅ 개별 카드 북마크 토글 (Step 1, 2, 3 공용)
   const toggleItemBookmark = (title, desc) => {
     const currentList = JSON.parse(localStorage.getItem('bookmarked_terms') || '[]');
     let newList;
-    
     if (bookmarkedItems[title]) {
-      // 이미 북마크 된 경우 -> 삭제
       newList = currentList.filter(item => item.title !== title);
       alert(`${title} 북마크가 해제되었습니다.`);
     } else {
-      // 북마크 안 된 경우 -> 추가
       newList = [...currentList, { id: Date.now(), title, desc }];
       alert(`${title} 항목이 북마크에 저장되었습니다!`);
     }
-    
     localStorage.setItem('bookmarked_terms', JSON.stringify(newList));
-    // 🔥 중요: 상태를 즉시 업데이트하여 아이콘 색상을 변경합니다.
     setBookmarkedItems(prev => ({ ...prev, [title]: !prev[title] }));
   };
 
-  // ✅ 북마크 아이콘 컴포넌트 (isActive 값에 따라 색상 변경)
   const BookmarkSvg = ({ isActive, onClick }) => (
     <button onClick={onClick} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
       <svg width="20" height="20" viewBox="0 0 24 24" fill={isActive ? MAIN_COLOR : "none"} stroke={isActive ? MAIN_COLOR : "#cbd5e1"} strokeWidth="2.5">
-        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
       </svg>
     </button>
   );
 
+  // 3. AI 데이터를 기존 3-Step UI에 맞춰 재구성
   const steps = [
     {
-      title: "Step 1. 관련 용어",
-      icon: <BookOpen size={18} />,
+      title: "Step 1. 상세 분석 및 용어",
+      icon: <Search size={18} />,
       content: (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {[
-            { title: "근저당권", desc: "집주인이 집을 담보로 대출을 받았음을 의미합니다." },
-            { title: "대항력", desc: "낙찰 후에도 보증금을 돌려받을 권리를 말합니다." }
-          ].map((item, idx) => (
-            <div key={idx} style={{ background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #f1f5f9', position: 'relative' }}>
+          {reportData.details?.map((item, idx) => (
+            <div key={idx} style={{ background: 'white', padding: '20px', borderRadius: '15px', border: `1px solid ${currentTheme.bgBorder}`, position: 'relative' }}>
               <div style={{ position: 'absolute', right: '12px', top: '12px' }}>
                 <BookmarkSvg isActive={bookmarkedItems[item.title]} onClick={() => toggleItemBookmark(item.title, item.desc)} />
               </div>
-              <h4 style={{ fontWeight: 'bold', fontSize: '15px', margin: '0 0 8px 0', color: '#1e293b' }}>{item.title}</h4>
-              <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: 0 }}>{item.desc}</p>
+              <h4 style={{ fontWeight: 'bold', fontSize: '15px', margin: '0 0 8px 0', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {item.title}
+                <span style={{
+                  fontSize: '10px', padding: '2px 6px', borderRadius: '4px',
+                  background: item.risk === 'High' ? '#fee2e2' : item.risk === 'Medium' ? '#fef3c7' : '#d1fae5',
+                  color: item.risk === 'High' ? '#ef4444' : item.risk === 'Medium' ? '#f59e0b' : '#10b981'
+                }}>
+                  {item.risk}
+                </span>
+              </h4>
+              <p style={{ fontSize: '13px', color: '#64748b', lineHeight: '1.5', margin: 0, paddingRight: '20px' }}>{item.desc}</p>
             </div>
           ))}
+          {(!reportData.details || reportData.details.length === 0) && (
+            <p style={{ fontSize: '13px', color: '#64748b' }}>상세 분석 항목이 없습니다.</p>
+          )}
         </div>
       )
     },
     {
-      title: "Step 2. 분석 항목",
-      icon: <Search size={18} />,
+      title: "Step 2. AI 종합 요약",
+      icon: <BookOpen size={18} />,
       content: (
-        <div style={{ background: 'white', padding: '24px', borderRadius: '15px', border: '1px solid #fde68a', position: 'relative' }}>
+        <div style={{ background: 'white', padding: '24px', borderRadius: '15px', border: `1px solid ${currentTheme.bgBorder}`, position: 'relative' }}>
           <div style={{ position: 'absolute', right: '12px', top: '12px' }}>
-            <BookmarkSvg 
-              isActive={bookmarkedItems["융자 비율 분석"]} 
-              onClick={() => toggleItemBookmark("융자 비율 분석", "현재 건물에 시세 대비 62%의 융자가 설정되어 있습니다. 안전 기준(60%)을 초과하므로 주의가 필요합니다.")} 
+            <BookmarkSvg
+              isActive={bookmarkedItems["AI 종합 요약"]}
+              onClick={() => toggleItemBookmark("AI 종합 요약", reportData.summary)}
             />
           </div>
           <p style={{ fontSize: '15px', lineHeight: '1.8', margin: 0, paddingRight: '20px' }}>
-            현재 건물에 <span style={{ fontWeight: 'bold' }}>시세 대비 62%의 융자</span>가 설정되어 있습니다. 안전 기준(60%)을 초과하므로 주의가 필요합니다.
+            {reportData.summary}
           </p>
         </div>
       )
     },
     {
-      title: "Step 3. 대응 방법",
+      title: "Step 3. AI 맞춤 대응",
       icon: <Wrench size={18} />,
       content: (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #fef3c7', position: 'relative' }}>
+          <div style={{ background: 'white', padding: '20px', borderRadius: '15px', border: `1px solid ${currentTheme.bgBorder}`, position: 'relative' }}>
             <div style={{ position: 'absolute', right: '12px', top: '12px' }}>
-              <BookmarkSvg 
-                isActive={bookmarkedItems["대응 1. 특약 삽입"]} 
-                onClick={() => toggleItemBookmark("대응 1. 특약 삽입", "잔금 지급 시 대출금 상환 및 말소 조건을 넣으세요.")} 
+              <BookmarkSvg
+                isActive={bookmarkedItems["AI 맞춤 대응 가이드"]}
+                onClick={() => toggleItemBookmark("AI 맞춤 대응 가이드", reportData.advice)}
               />
             </div>
-            <h4 style={{ fontWeight: 'bold', color: '#d97706', fontSize: '14px', margin: '0 0 8px 0' }}>대응 1. 특약 삽입</h4>
-            <p style={{ fontWeight: 'bold', fontSize: '16px', margin: 0, paddingRight: '24px' }}>"잔금 지급 시 대출금 상환 및 말소" 조건을 넣으세요.</p>
+            <h4 style={{ fontWeight: 'bold', color: MAIN_COLOR, fontSize: '14px', margin: '0 0 8px 0' }}>💡 현실적인 조언</h4>
+            <p style={{ fontWeight: 'bold', fontSize: '15px', margin: 0, paddingRight: '24px', lineHeight: '1.5' }}>
+              "{reportData.advice}"
+            </p>
           </div>
-          
-          <button onClick={() => navigate('/contract-report')} style={{ width: '100%', background: MAIN_COLOR, color: 'white', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', marginTop: '10px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(63, 77, 142, 0.2)' }}>
+
+          <button onClick={() => navigate('/contract-report')} style={{ width: '100%', background: '#3f4d8e', color: 'white', padding: '16px', borderRadius: '15px', border: 'none', fontWeight: 'bold', marginTop: '10px', cursor: 'pointer', boxShadow: '0 4px 12px rgba(63, 77, 142, 0.2)' }}>
             ✍️ AI 안심 특약 자동 생성
           </button>
         </div>
@@ -148,33 +175,33 @@ const CautionReport = () => {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', backgroundColor: '#e5e7eb', minHeight: '100vh' }}>
       <div style={{ width: '100%', maxWidth: '430px', backgroundColor: '#F8F9FB', position: 'relative', display: 'flex', flexDirection: 'column', minHeight: '100vh', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
-        
-        {/* Header */}
-        <div style={{ backgroundColor: MAIN_COLOR, padding: '56px 24px 80px 24px', borderRadius: '0 0 40px 40px', color: 'white', position: 'relative', flexShrink: 0 }}>
+
+        {/* 상단 Header (AI 데이터 연동) */}
+        <div style={{ backgroundColor: MAIN_COLOR, padding: '56px 24px 80px 24px', borderRadius: '0 0 40px 40px', color: 'white', position: 'relative', flexShrink: 0, transition: 'background-color 0.5s ease' }}>
           <div style={{ position: 'absolute', top: '16px', left: '0', right: '0', padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div onClick={() => navigate(-1)} style={{ cursor: 'pointer', fontWeight: 'bold' }}>← Back</div>
             <button onClick={toggleMainBookmark} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '10px', padding: '8px', cursor: 'pointer' }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill={isBookmarked ? "white" : "none"} stroke="white" strokeWidth="2.5">
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
               </svg>
             </button>
           </div>
-          <p style={{ fontSize: '13px', opacity: 0.6, marginBottom: '4px' }}>마포구 합정동 123-4 / 302호</p>
+          <p style={{ fontSize: '13px', opacity: 0.8, marginBottom: '4px', fontWeight: 'bold' }}>AI 안전 점수: {reportData.score}점</p>
           <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-            주의가 필요해요 <AlertTriangle size={24} />
+            {currentTheme.text} {currentTheme.icon}
           </h2>
         </div>
 
-        {/* Icons Grid */}
+        {/* 4가지 핵심 요약 (시각적 일관성을 위해 유지) */}
         <div style={{ padding: '0 20px', marginTop: '-48px', zIndex: 10, flexShrink: 0 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
             {[
-              { label: '소유권', icon: '🏠', status: '안전', color: '#34C759' },
-              { label: '채무', icon: '⚖️', status: '주의', color: '#FF9500' },
-              { label: '건물', icon: '🏢', status: '주의', color: '#FF9500' },
-              { label: '세금', icon: '📋', status: '안전', color: '#34C759' }
+              { label: '종합평가', icon: '🤖', status: reportData.status === 'Green' ? '안전' : '주의', color: MAIN_COLOR },
+              { label: '소유권', icon: '🏠', status: '확인', color: '#64748b' },
+              { label: '채무', icon: '⚖️', status: '확인', color: '#64748b' },
+              { label: '특약필요', icon: '📋', status: reportData.status === 'Red' ? '필수' : '권장', color: '#64748b' }
             ].map((item, i) => (
-              <div key={i} style={{ background: 'white', padding: '12px 4px', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', border: item.status === '주의' ? '1px solid #ffe8a3' : '1px solid #f1f5f9' }}>
+              <div key={i} style={{ background: 'white', padding: '12px 4px', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 6px rgba(0,0,0,0.05)', border: `1px solid ${currentTheme.bgBorder}` }}>
                 <span style={{ fontSize: '20px' }}>{item.icon}</span>
                 <span style={{ fontSize: '11px', fontWeight: 'bold', color: '#334155', marginTop: '4px' }}>{item.label}</span>
                 <span style={{ fontSize: '10px', fontWeight: 'bold', color: item.color }}>● {item.status}</span>
@@ -183,7 +210,7 @@ const CautionReport = () => {
           </div>
         </div>
 
-        {/* Carousel Area */}
+        {/* 캐러셀 영역 */}
         <div style={{ marginTop: '32px', backgroundColor: 'white', borderRadius: '40px 40px 0 0', flex: 1, padding: '16px 0', position: 'relative', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
             <div style={{ width: '48px', height: '6px', backgroundColor: '#f1f5f9', borderRadius: '3px' }}></div>
@@ -197,7 +224,7 @@ const CautionReport = () => {
             {steps.map((step, index) => (
               <div key={index} style={{ minWidth: '100%', padding: '0 24px', boxSizing: 'border-box' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '24px' }}>
-                  <span style={{ color: '#64748b' }}>{step.icon}</span> {step.title}
+                  <span style={{ color: MAIN_COLOR }}>{step.icon}</span> {step.title}
                 </h3>
                 {step.content}
               </div>
@@ -205,9 +232,9 @@ const CautionReport = () => {
           </div>
         </div>
 
-        {/* Bottom Buttons */}
+        {/* 하단 탭 버튼 */}
         <div style={{ display: 'flex', height: '80px', borderTop: '1px solid #f1f5f9', backgroundColor: 'white', flexShrink: 0 }}>
-          <button onClick={() => navigate('/chat')} style={{ flex: 1, backgroundColor: MAIN_COLOR, color: 'white', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}>
+          <button onClick={() => navigate('/chat')} style={{ flex: 1, backgroundColor: '#3f4d8e', color: 'white', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}>
             <MessageCircle size={22} fill="white" />
             <span style={{ fontSize: '11px', fontWeight: 'bold' }}>AI 챗봇 상담</span>
           </button>

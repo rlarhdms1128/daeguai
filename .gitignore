@@ -1,8 +1,38 @@
+# --- 의존성 및 라이브러리 (용량이 커서 제외) ---
 node_modules/
-dist/
-dist-ssr/
-*.local
+jspm_packages/
+package-lock.json (선택사항: 협업 시 버전 고정을 위해 올리기도 함)
+
+# --- 보안 및 설정 (가장 중요! API 키 유출 방지) ---
 .env
-.env.*
+.env.local
+.env.*.local
+*.config.js (민감한 정보가 포함된 경우)
+
+# --- 빌드 결과물 및 캐시 ---
+dist/
+build/
+.npm
+.eslintcache
+.parcel-cache
+.cache/
+
+# --- 운영체제(OS) 관련 쓰레기 파일 ---
 .DS_Store
+Thumbs.db
+desktop.ini
+
+# --- 에러 로그 및 디버그 ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# --- 에디터 및 툴 설정 (개인 설정값) ---
 .vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp

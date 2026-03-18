@@ -1,5 +1,10 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { GoogleGenerativeAI } from '@google/generative-ai';
+
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-3.1-flash-lite-preview" });
+
 
 function Chat() {
   const navigate = useNavigate();
@@ -51,21 +56,30 @@ function Chat() {
 
   const userCount = messages.filter((msg) => msg.type === "user").length;
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     const trimmed = inputValue.trim();
     if (!trimmed) return;
-    const now = new Date();
-    const timeString = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const timeString = new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true });
 
-    const nextMessages = [...messages, { type: "user", text: trimmed, time: timeString }];
-
-    if (userCount < 2) {
-      setTimeout(() => {
-        setMessages((prev) => [...prev, { type: "ai", text: aiReplies[userCount], time: timeString }]);
-      }, 500);
-    }
-    setMessages(nextMessages);
+    // 내 메시지 화면에 추가
+    setMessages(prev => [...prev, { type: "user", text: trimmed, time: timeString }]);
     setInputValue("");
+
+    try {
+      // 분석된 서류 내용(Context)을 같이 보내주면 챗봇이 더 똑똑하게 대답합니다.
+      const savedReport = localStorage.getItem('ai_analysis_result') || "";
+      const prompt = `
+        너는 부동산 전문가야. 다음은 이 집의 서류 분석 결과야: ${savedReport}
+        사용자의 다음 질문에 친절하게 짧게 대답해줘: ${trimmed}
+      `;
+
+      const result = await model.generateContent(prompt);
+      const aiText = result.response.text();
+
+      setMessages(prev => [...prev, { type: "ai", text: aiText, time: timeString }]);
+    } catch (error) {
+      setMessages(prev => [...prev, { type: "ai", text: "죄송합니다, 잠시 오류가 발생했어요.", time: timeString }]);
+    }
   };
 
   return (
@@ -111,7 +125,7 @@ function Chat() {
                   {msg.type === 'ai' && (
                     <button className="chat-bookmark-btn" onClick={() => toggleBookmark(msg.text)}>
                       <svg width="16" height="16" viewBox="0 0 24 24" fill={bookmarkedTexts.includes(msg.text) ? "#3f4d8e" : "none"} stroke={bookmarkedTexts.includes(msg.text) ? "#3f4d8e" : "#cbd5e1"} strokeWidth="2.5">
-                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                        <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                       </svg>
                     </button>
                   )}
