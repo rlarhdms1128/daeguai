@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Menu, ChevronDown, ChevronLeft, ChevronRight, Check, X, Sparkles, Calendar as CalendarIcon } from 'lucide-react';
 
@@ -11,17 +11,31 @@ export default function Calendar() {
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [selectedDate, setSelectedDate] = useState(today.getDate());
 
-  const [aiSuggestion, setAiSuggestion] = useState({
-    title: '잔금 납부 및 입주',
-    date: 20, 
-    month: 2, 
-    year: 2026,
-    show: true
+  // ✅ 1. 일정(events)을 localStorage에서 불러오기 (없으면 빈 배열)
+  const [events, setEvents] = useState(() => {
+    const saved = localStorage.getItem('calendar_events_v2');
+    return saved ? JSON.parse(saved) : [];
   });
 
-  const [events, setEvents] = useState([]);
+  // ✅ 2. AI 제안창 상태 불러오기 (사용자가 이미 껐으면 새로고침해도 안 보이게)
+  const [aiSuggestion, setAiSuggestion] = useState(() => {
+    const isDismissed = localStorage.getItem('ai_suggestion_dismissed') === 'true';
+    return {
+      title: '잔금 납부 및 입주',
+      date: 20, 
+      month: 2, 
+      year: 2026,
+      show: !isDismissed // 닫은 적이 없으면 true
+    };
+  });
+
   const [isInputOpen, setIsInputOpen] = useState(false);
   const [newTitle, setNewTitle] = useState('');
+
+  // ✅ 3. events 배열이 바뀔 때마다 자동으로 localStorage에 저장
+  useEffect(() => {
+    localStorage.setItem('calendar_events_v2', JSON.stringify(events));
+  }, [events]);
 
   const years = [];
   for (let y = 2024; y <= 2040; y++) { years.push(y); }
@@ -34,9 +48,15 @@ export default function Calendar() {
   for (let i = 0; i < firstDayIndex; i++) calendarDays.push(null);
   for (let i = 1; i <= lastDate; i++) calendarDays.push(i);
 
+  // AI 제안 창 숨기기 + 로컬 스토리지에 기록
+  const dismissAiSuggestion = () => {
+    setAiSuggestion({ ...aiSuggestion, show: false });
+    localStorage.setItem('ai_suggestion_dismissed', 'true');
+  };
+
   const acceptAiSuggestion = () => {
     const newEvent = {
-      id: 'ai-extract',
+      id: 'ai-extract-' + Date.now(), // 고유 아이디 부여
       year: aiSuggestion.year,
       month: aiSuggestion.month,
       day: aiSuggestion.date,
@@ -45,7 +65,7 @@ export default function Calendar() {
       color: '#EF4444'
     };
     setEvents([newEvent, ...events]);
-    setAiSuggestion({ ...aiSuggestion, show: false });
+    dismissAiSuggestion(); // 수락 후 창 닫기
   };
 
   const handleDirectAdd = () => {
@@ -155,7 +175,7 @@ export default function Calendar() {
               <div key={event.id} className="full-width-box">
                 <div className="event-card-wide">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <div style={{ width: '4px', height: '30px', background: event.id === 'ai-extract' ? '#f87171' : 'white', borderRadius: '2px' }} />
+                    <div style={{ width: '4px', height: '30px', background: event.color === '#EF4444' ? '#f87171' : 'white', borderRadius: '2px' }} />
                     <div>
                       <p style={{ fontSize: '15px', fontWeight: '800', margin: 0 }}>{event.title}</p>
                       <p style={{ fontSize: '11px', opacity: 0.6, marginTop: '2px' }}>{event.time} • {event.year}.{event.month + 1}.{event.day}</p>
@@ -200,8 +220,8 @@ export default function Calendar() {
               <p style={{ fontSize: '11px', opacity: 0.7 }}>Found in your documents</p>
             </div>
             <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => setAiSuggestion({...aiSuggestion, show: false})} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '10px', color: 'white', padding: '8px' }}><X size={18}/></button>
-              <button onClick={acceptAiSuggestion} style={{ background: 'white', border: 'none', borderRadius: '10px', color: MAIN_COLOR, padding: '8px' }}><Check size={18}/></button>
+              <button onClick={dismissAiSuggestion} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '10px', color: 'white', padding: '8px', cursor: 'pointer' }}><X size={18}/></button>
+              <button onClick={acceptAiSuggestion} style={{ background: 'white', border: 'none', borderRadius: '10px', color: MAIN_COLOR, padding: '8px', cursor: 'pointer' }}><Check size={18}/></button>
             </div>
           </div>
         </div>
@@ -211,7 +231,7 @@ export default function Calendar() {
       {!isInputOpen && (
         <button 
           onClick={() => setIsInputOpen(true)}
-          style={{ width: '100%', background: 'white', color: MAIN_COLOR, border: 'none', padding: '18px', borderRadius: '18px', fontWeight: '800', marginTop: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
+          style={{ width: '100%', background: 'white', color: MAIN_COLOR, border: 'none', padding: '18px', borderRadius: '18px', fontWeight: '800', marginTop: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', cursor: 'pointer' }}
         >
           <Plus size={20} strokeWidth={3} /> Create Events
         </button>
