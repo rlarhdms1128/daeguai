@@ -87,6 +87,14 @@ export default function Calendar() {
     setIsInputOpen(false);
   };
 
+  // ✅ 추가된 삭제 함수 (86번 줄)
+  const handleDeleteEvent = (id) => {
+    if (window.confirm("이 일정을 삭제할까요?")) {
+      const updatedEvents = events.filter(event => event.id !== id);
+      setEvents(updatedEvents);
+    }
+  };
+
   return (
     <div style={{ backgroundColor: MAIN_COLOR, minHeight: '100vh', padding: '20px', color: 'white', boxSizing: 'border-box' }}>
       <style>{`
@@ -104,7 +112,6 @@ export default function Calendar() {
         .selected-date { background: white; color: ${MAIN_COLOR}; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 20px rgba(255, 255, 255, 0.3); }
         .event-dot { position: absolute; bottom: 6px; width: 4px; height: 4px; background: #f87171; border-radius: 50%; }
         
-        /* ✅ 버튼과 카드의 가로 길이를 100%로 통일 */
         .full-width-box { width: 100%; box-sizing: border-box; margin-bottom: 12px; }
         
         .event-card-wide { 
@@ -124,9 +131,8 @@ export default function Calendar() {
 
       {/* 상단 바 */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Menu size={24} onClick={() => navigate(-1)} style={{ cursor: 'pointer' }} />
+        <ChevronLeft size={24} onClick={() => navigate(-1)} style={{ cursor: 'pointer' }} />
         
-        {/* ✅ HTML 기본 드롭다운(select)으로 연도 변경 기능 추가 */}
         <select 
           value={viewYear} 
           onChange={(e) => setViewYear(Number(e.target.value))}
@@ -150,7 +156,6 @@ export default function Calendar() {
         </select>
       </div>
 
-      {/* ✅ 'Calendar' 글자 하얗게 설정 */}
       <h1 style={{ fontSize: '32px', fontWeight: '900', margin: '25px 0 10px', color: 'white' }}>Calendar</h1>
 
       {/* 📅 달력 카드 */}
@@ -187,7 +192,7 @@ export default function Calendar() {
 
       {/* 📋 Upcoming Events */}
       <div style={{ marginTop: '40px' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '15px', letterSpacing: '0.5px' }}>Upcoming Events</h3>
+        <h3 style={{ fontSize: '18px', fontWeight: '800', marginBottom: '10px', letterSpacing: '0.5px' }}>Upcoming Events</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {events.length > 0 ? (
             events.map(event => (
@@ -200,14 +205,20 @@ export default function Calendar() {
                       <p style={{ fontSize: '11px', opacity: 0.6, marginTop: '2px' }}>{event.time} • {event.year}.{event.month + 1}.{event.day}</p>
                     </div>
                   </div>
-                  <ChevronRight size={18} style={{ opacity: 0.3 }} />
+                  {/* ✅ 화살표 아이콘을 삭제(X) 버튼으로 교체 (176번 줄) */}
+                  <button 
+                    onClick={() => handleDeleteEvent(event.id)}
+                    style={{ background: 'none', border: 'none', color: 'white', opacity: 0.5, cursor: 'pointer', padding: '5px' }}
+                  >
+                    <X size={18} />
+                  </button>
                 </div>
               </div>
             ))
           ) : (
             <div style={{ textAlign: 'center', padding: '30px', opacity: 0.4 }}>
               <CalendarIcon size={28} style={{ marginBottom: '8px' }} />
-              <p style={{ fontSize: '13px' }}>No events added yet.</p>
+              <p style={{ fontSize: '13px' }}> 등록된 일정이 없습니다</p>
             </div>
           )}
         </div>
@@ -246,13 +257,12 @@ export default function Calendar() {
         </div>
       )}
 
-      {/* ➕ 추가 버튼 */}
       {!isInputOpen && (
         <button 
           onClick={() => setIsInputOpen(true)}
           style={{ width: '100%', background: 'white', color: MAIN_COLOR, border: 'none', padding: '18px', borderRadius: '18px', fontWeight: '800', marginTop: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', cursor: 'pointer' }}
         >
-          <Plus size={20} strokeWidth={3} /> Create Events
+          <Plus size={20} strokeWidth={3} /> 일정 추가하기
         </button>
       )}
     </div>
