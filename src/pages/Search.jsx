@@ -4,7 +4,6 @@ import { AlertCircle, CheckCircle2, X } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { SYSTEM_PROMPT } from '../prompt';
 
-// 🔥 1. 제미나이 초기 세팅 부활!
 const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
 const model = genAI.getGenerativeModel({
   model: "gemini-3.1-flash-lite-preview",
@@ -39,8 +38,6 @@ export default function Search() {
     doc1: null, doc2: null, doc3: null, doc4: null
   });
 
-  // 🚨 가짜 타이머(useEffect)는 삭제했습니다! 
-
   const handleFileChange = (key, e) => {
     const file = e.target.files[0];
     if (file) {
@@ -49,12 +46,10 @@ export default function Search() {
         e.target.value = ""; 
         return;
       }
-      // 🔥 2. 파일 이름(글자)이 아니라 파일 객체 자체를 저장해야 AI가 읽을 수 있습니다.
       setUploadedFiles(prev => ({ ...prev, [key]: file }));
     }
   };
 
-  // 🔥 3. 파일을 AI가 읽을 수 있게 변환해주는 함수 부활!
   const fileToGenerativePart = async (file) => {
     const base64EncodedDataPromise = new Promise((resolve) => {
       const reader = new FileReader();
@@ -66,34 +61,35 @@ export default function Search() {
     };
   };
 
-  // 🔥 4. 진짜 AI 통신 로직으로 교체!
   const startAnalysis = async () => {
     setIsModalOpen(false);
     setStep('loading');
     setProgress(0);
     setLoopCount(0);
 
-    // 심미용 진행바 애니메이션
     const progressInterval = setInterval(() => {
       setProgress(p => (p < 3 ? p + 1 : 0));
       setLoopCount(l => l + 1);
     }, 1500);
 
     try {
-      const filePart = await fileToGenerativePart(uploadedFiles.doc1);
+      // ✅ 수정됨: 업로드된 모든 서류를 payload 배열에 담아서 제미나이에게 한 번에 전송
+      const payload = ["업로드된 부동산 서류들을 모두 종합해서 꼼꼼히 교차 검증하고 분석해줘."];
+      
+      if (uploadedFiles.doc1) payload.push(await fileToGenerativePart(uploadedFiles.doc1));
+      if (uploadedFiles.doc2) payload.push(await fileToGenerativePart(uploadedFiles.doc2));
+      if (uploadedFiles.doc3) payload.push(await fileToGenerativePart(uploadedFiles.doc3));
+      if (uploadedFiles.doc4) payload.push(await fileToGenerativePart(uploadedFiles.doc4));
 
-      // 제미나이 호출
-      const result = await model.generateContent(["이 부동산 서류를 꼼꼼히 분석해줘.", filePart]);
+      const result = await model.generateContent(payload);
       const responseText = result.response.text();
 
-      // 마크다운 제거 후 파싱
       const cleanJson = responseText.replace(/```json|```/g, "").trim();
       const aiData = JSON.parse(cleanJson);
 
       clearInterval(progressInterval);
       setStep('finish');
 
-      // 🔥 5. 결과를 LocalStorage에 저장! (결과창에서 이 데이터를 꺼내 씁니다)
       localStorage.setItem('ai_analysis_result', JSON.stringify(aiData));
 
     } catch (error) {
@@ -105,8 +101,8 @@ export default function Search() {
   };
 
   const loadingData = [
-    { title: "서류 파싱 완료", desc: "텍스트·날인 인식 완료" },
-    { title: "소유권·채무관계 분석", desc: "갑구·을구 검토 중..." },
+    { title: "서류 파싱 완료", desc: "텍스트·날인 인식" }, // '인식중'이었으나 통일성을 위해 '인식'으로 바꿈
+    { title: "소유권·채무관계 분석", desc: "갑구·을구 검토" }, // '검토중'이었으나 통일성을 위해 '검토'로 바꿈
     { title: "건물·세금 상태 확인", desc: "건축물대장·세금 체납" },
     { title: "위험도 리포트 생성", desc: "신호등 점수 도출" },
   ];
@@ -135,7 +131,6 @@ export default function Search() {
             <input type="file" id="f3" accept=".pdf" style={{display:'none'}} onChange={(e)=>handleFileChange('doc3', e)} />
             <input type="file" id="f4" accept=".pdf" style={{display:'none'}} onChange={(e)=>handleFileChange('doc4', e)} />
             
-            {/* 🔥 6. 흰 화면 에러 방지를 위해 .name을 추가했습니다 */}
             <div onClick={() => document.getElementById('f1').click()}>
               <UploadItem title="등기부등본" tag="필수" desc={uploadedFiles.doc1?.name || "인터넷등기소 발급본"} completed={!!uploadedFiles.doc1} />
             </div>
@@ -179,7 +174,7 @@ export default function Search() {
             {step === 'finish' ? '분석이 완료되었습니다!' : 'AI가 심층 분석 중입니다'}
           </h3>
           <p style={{ color: '#94A3B8', marginBottom: '40px', fontSize: '14px' }}>
-            {step === 'finish' ? '결과 확인 버튼을 눌러주세요.' : `서류 대조 및 검증 진행 중 (${loopCount + 1}/3)`}
+            {step === 'finish' ? '결과 확인 버튼을 눌러주세요.' : `서류 대조 및 검증 진행 중`}
           </p>
 
           <div style={{ textAlign: 'left' }}>
@@ -221,7 +216,6 @@ export default function Search() {
         </div>
       )}
 
-      {/* 모달 유지 */}
       {isModalOpen && (
         <div style={{ 
           position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 

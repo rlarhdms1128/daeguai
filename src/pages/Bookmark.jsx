@@ -5,34 +5,28 @@ export default function Bookmark() {
   const navigate = useNavigate();
   const MAIN_COLOR = '#3f4d8e';
 
-  // 1. 상태 관리: 무조건 빈 배열([])로 시작
   const [reports, setReports] = useState([]);
   const [terms, setTerms] = useState([]);
   const [chatReplies, setChatReplies] = useState([]);
 
-  // 2. 페이지 로드 시 데이터가 있는지 엄격하게 체크
   useEffect(() => {
-    // 분석 리포트 확인
+    // 분석 리포트 확인 (전체 리포트와 세부 항목이 모두 섞여 있음)
     const savedReports = JSON.parse(localStorage.getItem('bookmarked_reports') || '[]');
     setReports(savedReports);
 
-    // 특약 및 상담 답변 통합 데이터 가져오기
+    // 특약 및 상담 답변
     const savedAllTerms = JSON.parse(localStorage.getItem('bookmarked_terms') || '[]');
-    
-    // 제목(title)을 기준으로 특약과 상담 답변을 분리
-    // 만약 데이터가 없으면 filter 결과도 빈 배열([])이 됩니다.
     setTerms(savedAllTerms.filter(item => item.title !== 'AI 상담 답변'));
     setChatReplies(savedAllTerms.filter(item => item.title === 'AI 상담 답변'));
   }, []);
 
-  // 데이터 전체 초기화 (🚨 시연 직전에 이 버튼을 꼭 한 번 누르세요!)
   const clearAllData = () => {
-    if (window.confirm("시연을 위해 모든 북마크 데이터를 초기화할까요?")) {
+    if (window.confirm("모든 북마크 데이터를 초기화할까요?")) {
       localStorage.clear(); 
       setReports([]);
       setTerms([]);
       setChatReplies([]);
-      alert("모두 비워졌습니다. 이제 깨끗한 상태로 시연을 시작하세요!");
+      alert("모두 삭제되었습니다!");
     }
   };
 
@@ -62,9 +56,8 @@ export default function Bookmark() {
         .reset-btn:hover { color: #3f4d8e; text-decoration: underline; }
       `}</style>
 
-      {/* 🚨 시연 전 필살기 버튼 (이미지의 리스트를 싹 지워줍니다) */}
       <button className="reset-btn" onClick={clearAllData}>데이터 초기화</button>
-      <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#1E293B', marginBottom: '8px', marginTop: '20px' }}>북마크</h2>
+      <h2 style={{ fontSize: '22px', fontWeight: '800', color: '#1E293B', margin: '20px 0 8px 0' }}>북마크</h2>
       <p style={{ fontSize: '13px', color: '#64748B', marginBottom: '20px' }}>카테고리별로 저장된 내역을 확인하세요.</p>
       
       {/* 1. 분석 리포트 섹션 */}
@@ -73,7 +66,14 @@ export default function Bookmark() {
         <div key={item.id} className="card" onClick={() => navigate('/caution-report')}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: '15px', fontWeight: '700', color: '#334155' }}>{item.title}</div>
-            <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '4px' }}>{item.date} 분석 완료</div>
+            
+            {/* ✅ 수정 3: 전체 리포트면 날짜를 띄우고, 세부 분석 항목이면 내용을 띄웁니다 */}
+            {item.date ? (
+              <div style={{ fontSize: '12px', color: '#94A3B8', marginTop: '4px' }}>{item.date} 분석 완료</div>
+            ) : (
+              <div style={{ fontSize: '13px', color: '#475569', lineHeight: '1.6', background: '#F8FAFC', padding: '12px', borderRadius: '14px', marginTop: '8px' }}>{item.desc}</div>
+            )}
+            
           </div>
           <button className="bookmark-btn" onClick={(e) => { e.stopPropagation(); removeItem(item.id, 'report'); }}>
             <svg width="22" height="22" viewBox="0 0 24 24" fill={MAIN_COLOR}><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>

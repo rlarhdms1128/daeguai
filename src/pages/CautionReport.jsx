@@ -19,7 +19,6 @@ const CautionReport = () => {
   const [isBookmarked, setIsBookmarked] = useState(false);
   const [bookmarkedItems, setBookmarkedItems] = useState({});
 
-  // 1. LocalStorage에서 AI 분석 결과 불러오기
   const [reportData, setReportData] = useState({
     status: "Green", score: 100, summary: "데이터를 불러오는 중입니다...", details: [], advice: ""
   });
@@ -31,7 +30,6 @@ const CautionReport = () => {
     }
   }, []);
 
-  // 2. 신호등 상태에 따른 테마 설정 (색상, 텍스트, 아이콘)
   const themeConfig = {
     Green: { color: '#10b981', text: '안전해요', icon: <CheckCircle size={24} />, bgBorder: '#d1fae5' },
     Yellow: { color: '#f59e0b', text: '주의가 필요해요', icon: <AlertTriangle size={24} />, bgBorder: '#fef3c7' },
@@ -42,15 +40,16 @@ const CautionReport = () => {
   const currentTheme = themeConfig[reportData.status] || themeConfig.Green;
   const MAIN_COLOR = currentTheme.color;
 
-  // 북마크 로직 (기존과 동일)
+  // ✅ 수정 1: 불러올 때도 'bookmarked_reports'(분석 리포트) 창고에서 꺼내오기
   useEffect(() => {
     const savedReports = JSON.parse(localStorage.getItem('bookmarked_reports') || '[]');
     setIsBookmarked(savedReports.some(item => item.title === 'AI 분석 리포트'));
 
-    const savedTerms = JSON.parse(localStorage.getItem('bookmarked_terms') || '[]');
-    const termMap = {};
-    savedTerms.forEach(item => { termMap[item.title] = true; });
-    setBookmarkedItems(termMap);
+    const itemMap = {};
+    savedReports.forEach(item => { 
+      if(item.title !== 'AI 분석 리포트') itemMap[item.title] = true; 
+    });
+    setBookmarkedItems(itemMap);
   }, []);
 
   const toggleMainBookmark = () => {
@@ -67,8 +66,9 @@ const CautionReport = () => {
     setIsBookmarked(!isBookmarked);
   };
 
+  // ✅ 수정 2: 저장할 때 'bookmarked_terms'(특약)가 아닌 'bookmarked_reports'(분석 리포트) 창고에 저장
   const toggleItemBookmark = (title, desc) => {
-    const currentList = JSON.parse(localStorage.getItem('bookmarked_terms') || '[]');
+    const currentList = JSON.parse(localStorage.getItem('bookmarked_reports') || '[]');
     let newList;
     if (bookmarkedItems[title]) {
       newList = currentList.filter(item => item.title !== title);
@@ -77,19 +77,23 @@ const CautionReport = () => {
       newList = [...currentList, { id: Date.now(), title, desc }];
       alert(`${title} 항목이 북마크에 저장되었습니다!`);
     }
-    localStorage.setItem('bookmarked_terms', JSON.stringify(newList));
+    localStorage.setItem('bookmarked_reports', JSON.stringify(newList));
     setBookmarkedItems(prev => ({ ...prev, [title]: !prev[title] }));
   };
 
   const BookmarkSvg = ({ isActive, onClick }) => (
-    <button onClick={onClick} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px' }}>
+    <button 
+      onMouseDown={(e) => e.stopPropagation()} 
+      onTouchStart={(e) => e.stopPropagation()}
+      onClick={(e) => { e.preventDefault(); e.stopPropagation(); onClick(); }} 
+      style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px', position: 'relative', zIndex: 50 }}
+    >
       <svg width="20" height="20" viewBox="0 0 24 24" fill={isActive ? MAIN_COLOR : "none"} stroke={isActive ? MAIN_COLOR : "#cbd5e1"} strokeWidth="2.5">
         <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
       </svg>
     </button>
   );
 
-  // 3. AI 데이터를 기존 3-Step UI에 맞춰 재구성
   const steps = [
     {
       title: "Step 1. 상세 분석 및 용어",
@@ -163,7 +167,6 @@ const CautionReport = () => {
     }
   ];
 
-  // 드래그 로직 (기존 동일)
   const [isDragging, setIsDragging] = useState(false);
   const [startX, setStartX] = useState(0);
   const [scrollLeft, setScrollLeft] = useState(0);
@@ -176,15 +179,16 @@ const CautionReport = () => {
     <div style={{ display: 'flex', justifyContent: 'center', backgroundColor: '#e5e7eb', minHeight: '100vh' }}>
       <div style={{ width: '100%', maxWidth: '430px', backgroundColor: '#F8F9FB', position: 'relative', display: 'flex', flexDirection: 'column', minHeight: '100vh', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
 
-        {/* 상단 Header (AI 데이터 연동) */}
         <div style={{ backgroundColor: MAIN_COLOR, padding: '56px 24px 80px 24px', borderRadius: '0 0 40px 40px', color: 'white', position: 'relative', flexShrink: 0, transition: 'background-color 0.5s ease' }}>
           <div style={{ position: 'absolute', top: '16px', left: '0', right: '0', padding: '0 24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div onClick={() => navigate(-1)} style={{ cursor: 'pointer', fontWeight: 'bold' }}>← Back</div>
-            <button onClick={toggleMainBookmark} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '10px', padding: '8px', cursor: 'pointer' }}>
+            
+            <button onClick={(e) => { e.stopPropagation(); toggleMainBookmark(); }} style={{ background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '10px', padding: '8px', cursor: 'pointer', position: 'relative', zIndex: 50 }}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill={isBookmarked ? "white" : "none"} stroke="white" strokeWidth="2.5">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
               </svg>
             </button>
+
           </div>
           <p style={{ fontSize: '13px', opacity: 0.8, marginBottom: '4px', fontWeight: 'bold' }}>AI 안전 점수: {reportData.score}점</p>
           <h2 style={{ fontSize: '24px', fontWeight: 'bold', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -192,7 +196,6 @@ const CautionReport = () => {
           </h2>
         </div>
 
-        {/* 4가지 핵심 요약 (시각적 일관성을 위해 유지) */}
         <div style={{ padding: '0 20px', marginTop: '-48px', zIndex: 10, flexShrink: 0 }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
             {[
@@ -210,7 +213,6 @@ const CautionReport = () => {
           </div>
         </div>
 
-        {/* 캐러셀 영역 */}
         <div style={{ marginTop: '32px', backgroundColor: 'white', borderRadius: '40px 40px 0 0', flex: 1, padding: '16px 0', position: 'relative', display: 'flex', flexDirection: 'column' }}>
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
             <div style={{ width: '48px', height: '6px', backgroundColor: '#f1f5f9', borderRadius: '3px' }}></div>
@@ -232,7 +234,6 @@ const CautionReport = () => {
           </div>
         </div>
 
-        {/* 하단 탭 버튼 */}
         <div style={{ display: 'flex', height: '80px', borderTop: '1px solid #f1f5f9', backgroundColor: 'white', flexShrink: 0 }}>
           <button onClick={() => navigate('/chat')} style={{ flex: 1, backgroundColor: '#3f4d8e', color: 'white', border: 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px', cursor: 'pointer' }}>
             <MessageCircle size={22} fill="white" />
