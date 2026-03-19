@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, X } from 'lucide-react'; // 아이콘 라이브러리 활용 ㅋ
+import { AlertCircle, CheckCircle2, X } from 'lucide-react'; 
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { SYSTEM_PROMPT } from '../prompt';
+
+// 🔥 1. 제미나이 초기 세팅 부활!
+const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({
+  model: "gemini-3.1-flash-lite-preview",
+  systemInstruction: SYSTEM_PROMPT
+});
 
 const Icons = {
   Back: () => (
@@ -20,8 +29,8 @@ export default function Search() {
   const [step, setStep] = useState('upload'); 
   const [progress, setProgress] = useState(0); 
   const [loopCount, setLoopCount] = useState(0); 
-  const [isModalOpen, setIsModalOpen] = useState(false); // 모달 오픈 상태 ㅋ
-  const [isAgreed, setIsAgreed] = useState(false); // 체크박스 상태 ㅋ
+  const [isModalOpen, setIsModalOpen] = useState(false); 
+  const [isAgreed, setIsAgreed] = useState(false); 
   const navigate = useNavigate();
   const MAIN_COLOR = '#3f4d8e';
   const SUCCESS_COLOR = '#22C55E';
@@ -30,23 +39,7 @@ export default function Search() {
     doc1: null, doc2: null, doc3: null, doc4: null
   });
 
-  useEffect(() => {
-    if (step === 'loading') {
-      const timer = setTimeout(() => {
-        if (progress < 3) {
-          setProgress(prev => prev + 1);
-        } else {
-          if (loopCount < 2) { 
-            setProgress(0);
-            setLoopCount(prev => prev + 1);
-          } else {
-            setStep('finish');
-          }
-        }
-      }, 1000); 
-      return () => clearTimeout(timer);
-    }
-  }, [step, progress, loopCount]);
+  // 🚨 가짜 타이머(useEffect)는 삭제했습니다! 
 
   const handleFileChange = (key, e) => {
     const file = e.target.files[0];
@@ -56,15 +49,59 @@ export default function Search() {
         e.target.value = ""; 
         return;
       }
-      setUploadedFiles(prev => ({ ...prev, [key]: file.name }));
+      // 🔥 2. 파일 이름(글자)이 아니라 파일 객체 자체를 저장해야 AI가 읽을 수 있습니다.
+      setUploadedFiles(prev => ({ ...prev, [key]: file }));
     }
   };
 
-  const startAnalysis = () => {
+  // 🔥 3. 파일을 AI가 읽을 수 있게 변환해주는 함수 부활!
+  const fileToGenerativePart = async (file) => {
+    const base64EncodedDataPromise = new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result.split(',')[1]);
+      reader.readAsDataURL(file);
+    });
+    return {
+      inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
+    };
+  };
+
+  // 🔥 4. 진짜 AI 통신 로직으로 교체!
+  const startAnalysis = async () => {
     setIsModalOpen(false);
     setStep('loading');
     setProgress(0);
     setLoopCount(0);
+
+    // 심미용 진행바 애니메이션
+    const progressInterval = setInterval(() => {
+      setProgress(p => (p < 3 ? p + 1 : 0));
+      setLoopCount(l => l + 1);
+    }, 1500);
+
+    try {
+      const filePart = await fileToGenerativePart(uploadedFiles.doc1);
+
+      // 제미나이 호출
+      const result = await model.generateContent(["이 부동산 서류를 꼼꼼히 분석해줘.", filePart]);
+      const responseText = result.response.text();
+
+      // 마크다운 제거 후 파싱
+      const cleanJson = responseText.replace(/```json|```/g, "").trim();
+      const aiData = JSON.parse(cleanJson);
+
+      clearInterval(progressInterval);
+      setStep('finish');
+
+      // 🔥 5. 결과를 LocalStorage에 저장! (결과창에서 이 데이터를 꺼내 씁니다)
+      localStorage.setItem('ai_analysis_result', JSON.stringify(aiData));
+
+    } catch (error) {
+      console.error(error);
+      clearInterval(progressInterval);
+      alert("분석 중 오류가 발생했습니다. 다시 시도해주세요.");
+      setStep('upload');
+    }
   };
 
   const loadingData = [
@@ -98,17 +135,18 @@ export default function Search() {
             <input type="file" id="f3" accept=".pdf" style={{display:'none'}} onChange={(e)=>handleFileChange('doc3', e)} />
             <input type="file" id="f4" accept=".pdf" style={{display:'none'}} onChange={(e)=>handleFileChange('doc4', e)} />
             
+            {/* 🔥 6. 흰 화면 에러 방지를 위해 .name을 추가했습니다 */}
             <div onClick={() => document.getElementById('f1').click()}>
-              <UploadItem title="등기부등본" tag="필수" desc={uploadedFiles.doc1 || "인터넷등기소 발급본"} completed={!!uploadedFiles.doc1} />
+              <UploadItem title="등기부등본" tag="필수" desc={uploadedFiles.doc1?.name || "인터넷등기소 발급본"} completed={!!uploadedFiles.doc1} />
             </div>
             <div onClick={() => document.getElementById('f2').click()}>
-              <UploadItem title="부동산 계약서" tag="선택" desc={uploadedFiles.doc2 || "전세계약서 PDF 파일"} dashed completed={!!uploadedFiles.doc2} />
+              <UploadItem title="부동산 계약서" tag="선택" desc={uploadedFiles.doc2?.name || "전세계약서 PDF 파일"} dashed completed={!!uploadedFiles.doc2} />
             </div>
             <div onClick={() => document.getElementById('f3').click()}>
-              <UploadItem title="건축물대장" tag="선택" desc={uploadedFiles.doc3 || "정부24 무료 발급 PDF"} dashed completed={!!uploadedFiles.doc3} />
+              <UploadItem title="건축물대장" tag="선택" desc={uploadedFiles.doc3?.name || "정부24 무료 발급 PDF"} dashed completed={!!uploadedFiles.doc3} />
             </div>
             <div onClick={() => document.getElementById('f4').click()}>
-              <UploadItem title="세금완납증명서" tag="선택" desc={uploadedFiles.doc4 || "국세·지방세 완납 확인서"} dashed completed={!!uploadedFiles.doc4} />
+              <UploadItem title="세금완납증명서" tag="선택" desc={uploadedFiles.doc4?.name || "국세·지방세 완납 확인서"} dashed completed={!!uploadedFiles.doc4} />
             </div>
 
             <button 
@@ -183,7 +221,7 @@ export default function Search() {
         </div>
       )}
 
-      {/* 👇 법적 고지 안내 모달 ㅋ */}
+      {/* 모달 유지 */}
       {isModalOpen && (
         <div style={{ 
           position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', 
@@ -213,17 +251,11 @@ export default function Search() {
               • 계약 전 반드시 공인중개사나 전문가와 상담하시기 바랍니다.
             </div>
 
-            {/* ✅ 심플해진 체크박스 섹션 ㅋ */}
             <div 
               onClick={() => setIsAgreed(!isAgreed)}
               style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                gap: '10px',
-                cursor: 'pointer',
-                marginBottom: '30px',
-                padding: '10px'
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                cursor: 'pointer', marginBottom: '30px', padding: '10px'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -265,15 +297,9 @@ export default function Search() {
 function UploadItem({ title, tag, desc, completed, dashed }) {
   return (
     <div style={{ 
-      display: 'flex', 
-      alignItems: 'center', 
-      padding: '20px 16px', 
-      borderRadius: '15px', 
+      display: 'flex', alignItems: 'center', padding: '20px 16px', borderRadius: '15px', 
       border: dashed ? '1.5px dashed #E2E8F0' : completed ? '1.5px solid #3f4d8e' : '1.5px solid #E2E8F0',
-      background: 'white', 
-      marginBottom: '12px', 
-      cursor: 'pointer',
-      transition: 'all 0.2s'
+      background: 'white', marginBottom: '12px', cursor: 'pointer', transition: 'all 0.2s'
     }}>
       <div style={{ width: '45px', height: '45px', background: '#F8FAFC', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
         📋
