@@ -93,7 +93,6 @@ export default function Search() {
           </div>
 
           <div style={{ background: 'white', marginTop: '-30px', borderRadius: '30px 30px 0 0', padding: '30px 20px', minHeight: '500px' }}>
-            {/* 업로드 아이템들 생략 (기존 코드와 동일) */}
             <input type="file" id="f1" accept=".pdf" style={{display:'none'}} onChange={(e)=>handleFileChange('doc1', e)} />
             <input type="file" id="f2" accept=".pdf" style={{display:'none'}} onChange={(e)=>handleFileChange('doc2', e)} />
             <input type="file" id="f3" accept=".pdf" style={{display:'none'}} onChange={(e)=>handleFileChange('doc3', e)} />
@@ -113,7 +112,7 @@ export default function Search() {
             </div>
 
             <button 
-              onClick={() => setIsModalOpen(true)} // 👈 바로 시작 안 하고 모달 띄움 ㅋ
+              onClick={() => setIsModalOpen(true)} 
               disabled={!uploadedFiles.doc1}
               style={{ 
                 width: '100%', padding: '18px', borderRadius: '15px', border: 'none',
@@ -128,7 +127,6 @@ export default function Search() {
           </div>
         </div>
       ) : (
-        /* 로딩/완료 화면 생략 (기존 코드와 동일) */
         <div style={{ padding: '40px 20px', textAlign: 'center' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '60px' }}>
             <h2 style={{ fontSize: '20px', fontWeight: '900', color: MAIN_COLOR, margin: 0 }}>집어<span style={{color: '#94A3B8'}}>줌</span></h2>
@@ -215,23 +213,29 @@ export default function Search() {
               • 계약 전 반드시 공인중개사나 전문가와 상담하시기 바랍니다.
             </div>
 
+            {/* ✅ 심플해진 체크박스 섹션 ㅋ */}
             <div 
               onClick={() => setIsAgreed(!isAgreed)}
               style={{ 
-                display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                padding: '12px', borderRadius: '12px', cursor: 'pointer',
-                background: isAgreed ? '#F0F9FF' : 'transparent',
-                border: isAgreed ? `1px solid ${MAIN_COLOR}` : '1px solid #E2E8F0',
-                marginBottom: '24px', transition: 'all 0.2s'
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '10px',
+                cursor: 'pointer',
+                marginBottom: '30px',
+                padding: '10px'
               }}
             >
-              <div style={{ 
-                width: '20px', height: '20px', borderRadius: '6px', border: `2px solid ${isAgreed ? MAIN_COLOR : '#E2E8F0'}`,
-                background: isAgreed ? MAIN_COLOR : 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '10px'
-              }}>
-                {isAgreed && <CheckCircle2 size={14} color="white" />}
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {isAgreed ? (
+                  <CheckCircle2 size={24} color={MAIN_COLOR} fill={`${MAIN_COLOR}15`} />
+                ) : (
+                  <div style={{ width: '22px', height: '22px', borderRadius: '50%', border: '2px solid #CBD5E1' }} />
+                )}
               </div>
-              <span style={{ fontSize: '14px', fontWeight: 'bold', color: isAgreed ? MAIN_COLOR : '#94A3B8' }}>위 내용을 모두 확인했습니다.</span>
+              <span style={{ fontSize: '15px', fontWeight: '600', color: isAgreed ? MAIN_COLOR : '#94A3B8' }}>
+                위 내용을 모두 확인했습니다.
+              </span>
             </div>
 
             <button 
@@ -258,7 +262,6 @@ export default function Search() {
   );
 }
 
-// UploadItem 함수는 기존과 동일하게 유지 ㅋ
 function UploadItem({ title, tag, desc, completed, dashed }) {
   return (
     <div style={{ 
