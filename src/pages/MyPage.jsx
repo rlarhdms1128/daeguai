@@ -102,11 +102,6 @@ function MyPage() {
       `}</style>
 
       <div className="header-profile-wrap">
-        <header className="topbar">
-          <button onClick={() => navigate('/')} className="home-btn">
-            <Home size={24} strokeWidth={2.3} />
-          </button>
-        </header>
 
         <section className="profile-section">
           <div className="avatar-box">
