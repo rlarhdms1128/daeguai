@@ -1,4 +1,3 @@
-//Layout.jsx
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -33,57 +32,51 @@ const Icons = {
 export default function Layout({ children }) {
   const [activeTab, setActiveTab] = useState('홈');
   const navigate = useNavigate();
-  const MAIN_COLOR = '#3f4d8e'; 
+  const MAIN_COLOR = '#4B4F8F';
 
   return (
-    <div className="phone-container" style={{ position: 'relative', backgroundColor: '#F8FAFC', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
-      
+    <div className="phone-container" style={{ position: 'relative', backgroundColor: '#F0F0F7', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+
       {/* 컨텐츠 영역 */}
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '120px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '90px' }}>
         {children}
       </div>
 
       {/* 하단 탭바 */}
-      <div style={{ 
-        position: 'absolute', bottom: 0, width: '100%', 
-        backgroundColor: 'white', borderTop: '1px solid #E2E8F0',
-        display: 'flex', justifyContent: 'space-around', 
-        alignItems: 'center', 
-        height: '90px',      
-        paddingTop: '12px',   
-        paddingBottom: '20px',
-        zIndex: 1000 
+      <div style={{
+        position: 'absolute', bottom: 0, width: '100%',
+        backgroundColor: 'white', borderTop: '1px solid #EDEDF8',
+        display: 'flex', justifyContent: 'space-around',
+        alignItems: 'center',
+        height: '68px',
+        paddingBottom: '8px',
+        zIndex: 1000,
+        fontFamily: "'Noto Sans KR', 'Apple SD Gothic Neo', sans-serif",
       }}>
-        
+
         {/* 홈 */}
-        <div 
-          onClick={() => { setActiveTab('홈'); navigate('/'); }} 
-          style={{ textAlign: 'center', flex: 1, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-        >
+        <div onClick={() => { setActiveTab('홈'); navigate('/'); }}
+          style={{ textAlign: 'center', flex: 1, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
           <Icons.Home color={activeTab === '홈' ? MAIN_COLOR : '#94A3B8'} />
-          <div style={{ fontSize: '10px', color: activeTab === '홈' ? MAIN_COLOR : '#94A3B8', fontWeight: 'bold', marginTop: '4px' }}>홈</div>
+          <div style={{ fontSize: 10, color: activeTab === '홈' ? MAIN_COLOR : '#94A3B8', fontWeight: 700 }}>홈</div>
         </div>
 
-        {/* 북마크 (🚨 이 부분을 수정했습니다!) */}
-        <div 
-          onClick={() => {
-            setActiveTab('북마크');
-            navigate('/bookmark'); // ✅ 북마크 페이지(/bookmark)로 이동!
-          }} 
-          style={{ textAlign: 'center', flex: 1, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-        >
+        {/* 북마크 */}
+        <div onClick={() => { setActiveTab('북마크'); navigate('/bookmark'); }}
+          style={{ textAlign: 'center', flex: 1, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
           <Icons.Bookmark color={activeTab === '북마크' ? MAIN_COLOR : '#94A3B8'} />
-          <div style={{ fontSize: '10px', color: activeTab === '북마크' ? MAIN_COLOR : '#94A3B8', fontWeight: 'bold', marginTop: '4px' }}>북마크</div>
+          <div style={{ fontSize: 10, color: activeTab === '북마크' ? MAIN_COLOR : '#94A3B8', fontWeight: 700 }}>북마크</div>
         </div>
 
-        {/* 중앙 돋보기 버튼 */}
+        {/* 중앙 돋보기 → /map 으로 이동 */}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          <div 
-            onClick={() => { setActiveTab(''); navigate('/search'); }} 
-            style={{ 
-              width: '52px', height: '52px', background: MAIN_COLOR, borderRadius: '50%',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', 
-              boxShadow: `0 4px 12px rgba(63, 77, 142, 0.4)`, cursor: 'pointer', marginTop: '-12px' 
+          <div
+            onClick={() => { setActiveTab('지도'); navigate('/map'); }}
+            style={{
+              width: 52, height: 52, background: MAIN_COLOR, borderRadius: '50%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              boxShadow: '0 4px 16px rgba(75,79,143,0.4)',
+              cursor: 'pointer', marginTop: '-5px',
             }}
           >
             <Icons.Search />
@@ -91,21 +84,17 @@ export default function Layout({ children }) {
         </div>
 
         {/* 상담 */}
-        <div 
-          onClick={() => { setActiveTab('상담'); navigate('/chat'); }} 
-          style={{ textAlign: 'center', flex: 1, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-        >
+        <div onClick={() => { setActiveTab('상담'); navigate('/chat'); }}
+          style={{ textAlign: 'center', flex: 1, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
           <Icons.Chat color={activeTab === '상담' ? MAIN_COLOR : '#94A3B8'} />
-          <div style={{ fontSize: '10px', color: activeTab === '상담' ? MAIN_COLOR : '#94A3B8', fontWeight: 'bold', marginTop: '4px' }}>상담</div>
+          <div style={{ fontSize: 10, color: activeTab === '상담' ? MAIN_COLOR : '#94A3B8', fontWeight: 700 }}>상담</div>
         </div>
 
         {/* 마이 */}
-        <div 
-          onClick={() => { setActiveTab('마이'); navigate('/mypage'); }} 
-          style={{ textAlign: 'center', flex: 1, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }}
-        >
+        <div onClick={() => { setActiveTab('마이'); navigate('/mypage'); }}
+          style={{ textAlign: 'center', flex: 1, cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
           <Icons.User color={activeTab === '마이' ? MAIN_COLOR : '#94A3B8'} />
-          <div style={{ fontSize: '10px', color: activeTab === '마이' ? MAIN_COLOR : '#94A3B8', fontWeight: 'bold', marginTop: '4px' }}>마이</div>
+          <div style={{ fontSize: 10, color: activeTab === '마이' ? MAIN_COLOR : '#94A3B8', fontWeight: 700 }}>마이</div>
         </div>
 
       </div>
