@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Leaflet 기본 마커 아이콘 fix
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -12,7 +11,6 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// 커스텀 마커
 const customIcon = new L.DivIcon({
   className: '',
   html: `
@@ -36,7 +34,6 @@ const customIcon = new L.DivIcon({
   iconAnchor: [18, 36],
 });
 
-// 지도 중심 이동 컴포넌트
 function MapController({ center }) {
   const map = useMap();
   useEffect(() => {
@@ -53,7 +50,8 @@ function Map() {
   const [selected, setSelected] = useState(null);
   const [mapCenter, setMapCenter] = useState([37.5665, 126.9780]);
 
-  // Daum 우편번호 스크립트 로드
+  const MAIN_COLOR = '#4B4F8F';
+
   useEffect(() => {
     if (window.daum?.Postcode) return;
     const script = document.createElement('script');
@@ -77,7 +75,6 @@ function Map() {
           zonecode: data.zonecode,
         });
 
-        // 주소 → 좌표 변환 (OpenStreetMap Nominatim)
         try {
           const res = await fetch(
             `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(fullAddress)}&format=json&limit=1`,
@@ -96,8 +93,7 @@ function Map() {
 
   const handleConfirm = () => {
     if (!selected) return;
-    localStorage.setItem('selected_address', selected.main);
-    navigate('/search');
+    alert("🚧 서비스 준비 중입니다!\n현재 AI 상세 분석 기능을 고도화하고 있습니다. 조금만 기다려 주세요.");
   };
 
   return (
@@ -108,9 +104,8 @@ function Map() {
       overflow: 'hidden',
     }}>
 
-      {/* ── Header ── */}
       <div style={{
-        background: '#4B4F8F',
+        background: MAIN_COLOR,
         padding: '20px 20px 20px',
         borderRadius: '0 0 28px 28px',
         color: 'white', flexShrink: 0, zIndex: 10,
@@ -123,11 +118,8 @@ function Map() {
           <span style={{ fontSize: 15, fontWeight: 800 }}>주소 검색</span>
         </div>
 
-        {/* 검색창 */}
         <div onClick={openPostcode} style={{ position: 'relative', cursor: 'pointer' }}>
-          <div style={{
-            position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)',
-          }}>
+          <div style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)' }}>
             <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               <circle cx="8" cy="8" r="5.5" stroke="#9CA3AF" strokeWidth="1.7"/>
               <path d="M12 12l3 3" stroke="#9CA3AF" strokeWidth="1.7" strokeLinecap="round"/>
@@ -157,7 +149,6 @@ function Map() {
         </div>
       </div>
 
-      {/* ── 지도 (Leaflet) ── */}
       <div style={{ flex: 1, position: 'relative', minHeight: 0, zIndex: 1 }}>
         <MapContainer
           center={mapCenter}
@@ -166,17 +157,12 @@ function Map() {
           zoomControl={false}
           attributionControl={false}
         >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+          <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
           <MapController center={mapCenter} />
-          {selected && (
-            <Marker position={mapCenter} icon={customIcon} />
-          )}
+          {selected && <Marker position={mapCenter} icon={customIcon} />}
         </MapContainer>
       </div>
 
-      {/* ── 하단 카드 ── */}
       {selected ? (
         <div style={{
           padding: '16px 16px 100px', background: 'white',
@@ -189,8 +175,8 @@ function Map() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path d="M9 2C6.24 2 4 4.24 4 7c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5Z" stroke="#4B4F8F" strokeWidth="1.5"/>
-                <circle cx="9" cy="7" r="1.8" fill="#4B4F8F"/>
+                <path d="M9 2C6.24 2 4 4.24 4 7c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5Z" stroke={MAIN_COLOR} strokeWidth="1.5"/>
+                <circle cx="9" cy="7" r="1.8" fill={MAIN_COLOR}/>
               </svg>
             </div>
             <div style={{ flex: 1 }}>
@@ -201,7 +187,7 @@ function Map() {
                 <p style={{ margin: '0 0 4px', fontSize: 12, color: '#6B7280' }}>{selected.sub}</p>
               )}
               <span style={{
-                fontSize: 11, fontWeight: 700, color: '#4B4F8F',
+                fontSize: 11, fontWeight: 700, color: MAIN_COLOR,
                 background: '#EDEDF8', padding: '2px 8px', borderRadius: 20,
                 display: 'inline-block',
               }}>
@@ -211,13 +197,14 @@ function Map() {
             <button onClick={openPostcode} style={{
               background: 'none', border: '1.5px solid #EDEDF8', borderRadius: 10,
               padding: '6px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 700,
-              color: '#4B4F8F', flexShrink: 0,
+              color: MAIN_COLOR, flexShrink: 0,
             }}>
               재검색
             </button>
           </div>
+          
           <button onClick={handleConfirm} style={{
-            width: '100%', background: '#4B4F8F', color: 'white',
+            width: '100%', background: MAIN_COLOR, color: 'white',
             padding: 15, borderRadius: 14, border: 'none',
             fontWeight: 800, fontSize: 14, cursor: 'pointer',
             boxShadow: '0 4px 16px rgba(75,79,143,0.3)',
@@ -226,12 +213,7 @@ function Map() {
           </button>
         </div>
       ) : (
-        /* 미선택 상태 안내 */
-        <div style={{
-          padding: '16px 16px 100px', background: 'white',
-          borderTop: '1.5px solid #EDEDF8', flexShrink: 0,
-          textAlign: 'center',
-        }}>
+        <div style={{ padding: '16px 16px 100px', background: 'white', borderTop: '1.5px solid #EDEDF8', flexShrink: 0, textAlign: 'center' }}>
           <p style={{ margin: 0, fontSize: 13, color: '#9CA3AF', fontWeight: 500 }}>
             위 검색창을 눌러 주소를 입력하세요
           </p>
