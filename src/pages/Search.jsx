@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AlertCircle, CheckCircle2, X, Sparkles } from 'lucide-react'; // ✅ Sparkles 아이콘 추가
+import { AlertCircle, CheckCircle2, X } from 'lucide-react'; 
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { SYSTEM_PROMPT } from '../prompt';
 
@@ -50,24 +50,6 @@ export default function Search() {
     }
   };
 
-  // ✅ 시연용 PDF 불러오기 함수 추가
-  const handleDemoUpload = async () => {
-    try {
-      // public 폴더에 있는 예시등기.pdf 파일을 가져와서 File 객체로 변환합니다.
-      const response = await fetch('/예시등기.pdf');
-      if (!response.ok) throw new Error("파일을 찾을 수 없습니다.");
-      
-      const blob = await response.blob();
-      const demoFile = new File([blob], "예시등기(시연용).pdf", { type: "application/pdf" });
-      
-      setUploadedFiles(prev => ({ ...prev, doc1: demoFile }));
-      alert("🎉 시연용 등기부등본이 성공적으로 업로드되었습니다!");
-    } catch (error) {
-      console.error(error);
-      alert("🚨 시연용 파일을 불러오지 못했습니다.\n'예시등기.pdf' 파일이 'public' 폴더 안에 있는지 꼭 확인해주세요!");
-    }
-  };
-
   const fileToGenerativePart = async (file) => {
     const base64EncodedDataPromise = new Promise((resolve) => {
       const reader = new FileReader();
@@ -91,6 +73,7 @@ export default function Search() {
     }, 1500);
 
     try {
+      // ✅ 수정됨: 업로드된 모든 서류를 payload 배열에 담아서 제미나이에게 한 번에 전송
       const payload = ["업로드된 부동산 서류들을 모두 종합해서 꼼꼼히 교차 검증하고 분석해줘."];
       
       if (uploadedFiles.doc1) payload.push(await fileToGenerativePart(uploadedFiles.doc1));
@@ -118,8 +101,8 @@ export default function Search() {
   };
 
   const loadingData = [
-    { title: "서류 파싱 완료", desc: "텍스트·날인 인식" }, 
-    { title: "소유권·채무관계 분석", desc: "갑구·을구 검토" }, 
+    { title: "서류 파싱 완료", desc: "텍스트·날인 인식" }, // '인식중'이었으나 통일성을 위해 '인식'으로 바꿈
+    { title: "소유권·채무관계 분석", desc: "갑구·을구 검토" }, // '검토중'이었으나 통일성을 위해 '검토'로 바꿈
     { title: "건물·세금 상태 확인", desc: "건축물대장·세금 체납" },
     { title: "위험도 리포트 생성", desc: "신호등 점수 도출" },
   ];
@@ -161,22 +144,6 @@ export default function Search() {
               <UploadItem title="세금완납증명서" tag="선택" desc={uploadedFiles.doc4?.name || "국세·지방세 완납 확인서"} dashed completed={!!uploadedFiles.doc4} />
             </div>
 
-            {/* ✅ 시연용 PDF 자동 업로드 버튼 */}
-            <button 
-              onClick={handleDemoUpload}
-              style={{ 
-                width: '100%', padding: '16px', borderRadius: '15px', 
-                border: `1.5px solid ${MAIN_COLOR}`, background: '#F8FAFC', 
-                color: MAIN_COLOR, fontWeight: 'bold', fontSize: '15px', 
-                marginTop: '30px', cursor: 'pointer', 
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                transition: 'all 0.2s'
-              }}
-            >
-              <Sparkles size={18} /> 시연용 PDF 자동 업로드
-            </button>
-
-            {/* 메인 분석 버튼 */}
             <button 
               onClick={() => setIsModalOpen(true)} 
               disabled={!uploadedFiles.doc1}
@@ -184,7 +151,7 @@ export default function Search() {
                 width: '100%', padding: '18px', borderRadius: '15px', border: 'none',
                 background: uploadedFiles.doc1 ? MAIN_COLOR : '#EEF2FF', 
                 color: uploadedFiles.doc1 ? 'white' : '#94A3B8', 
-                fontWeight: 'bold', fontSize: '16px', marginTop: '12px',
+                fontWeight: 'bold', fontSize: '16px', marginTop: '40px',
                 cursor: uploadedFiles.doc1 ? 'pointer' : 'not-allowed'
               }}
             >
