@@ -1,16 +1,62 @@
-# React + Vite
+## 🏠 집어줌 (Zip a Zoom)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**누구나 이해할 수 있는 전세 계약 리스크 분석 서비스**
 
-Currently, two official plugins are available:
+집어줌은 부동산 계약에 익숙하지 않은 사용자가 등기부등본 및 계약서를 업로드하면, AI가 핵심 위험 요소를 자동으로 분석하여 계약 위험도를 직관적으로 제공하는 서비스입니다.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+복잡한 법률 문서를 쉽게 해석하고, 상황별 대응 가이드를 함께 제공함으로써 부동산 거래 과정에서 발생하는 정보 불균형 문제를 해소하고, AI 기술을 일상 속 안전망으로 확장하는 것을 목표로 합니다.
 
-## React Compiler
+---
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## 🎯 서비스 개요
 
-## Expanding the ESLint configuration
+집어줌은 사용자가 부동산 계약을 진행하기 전,
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+1. 복잡한 문서를 쉽게 이해하고
+2. 잠재적인 위험 요소를 사전에 파악하며
+3. 상황에 맞는 대응 방법을 안내받을 수 있도록 지원합니다.
+
+---
+
+## ⚠️ 기획 배경
+
+전세 사기 피해는 지속적으로 증가하고 있으며, 특히 20~30대 청년층에 집중되고 있습니다.
+
+- 등기부등본 및 계약서의 복잡한 법률 용어 이해의 어려움
+- 자금 부족으로 인한 시세 판단의 한계
+- 취업 및 이사 일정으로 인한 충분한 검토 시간 부족
+
+기존 서비스는 정보 제공에 그치는 경우가 많아, 사용자가 위와 같은 상황에서 스스로 위험을 판단해야 하는 부담이 존재합니다. 이에 집어줌은 AI 기반 분석을 통해 누구나 쉽게 이해하고 판단할 수 있는 환경을 제공하고자 합니다.
+
+---
+
+## 🚀 주요 기능
+
+### 📄 1. 등기부등본 위험도 분석
+- 소유자, 근저당, 압류 여부 등 주요 정보 자동 추출
+- 권리관계 및 전세가율 기반 위험 요소 분석
+- 신호등 방식(초록 / 노랑 / 빨강)으로 위험도 시각화
+
+### 📝 2. 계약서 내용 검증
+- 보증금, 특약, 위험 조항 자동 분석
+- 등기부 정보와 계약 내용 간 불일치 여부 확인
+
+### 📌 3. 계약 가이드 제공
+- 위험 요소에 따른 대응 방법 및 법률 정보 제공
+- 상황별 맞춤형 특약 문구 생성
+
+### 🤖 4. 부가 기능
+- AI 챗봇 상담 기능
+- 계약 일정 관리 및 알림 기능
+- 중요 정보 저장(북마크)
+
+---
+
+## 🛠 기술 스택
+
+### Frontend
+- React  
+- Vite  
+- react-router-dom  
+- styled-components  
+
